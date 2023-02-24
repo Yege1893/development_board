@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./site.css">
+    <title>Kanban Board</title>
+</head>
+<body>
+    <div class="container">
+        <div class="kanban-heading">
+            <strong class="kanban-heading-text">Kanban Board</strong>
+        </div>
+        <div class="kanban-board">
+            <div class="kanban-block" id="todo">
+                <strong>To Do</strong>
+            </div>
+            <div class="kanban-block" id="inprogress">
+                <strong>In Progress</strong>
+            </div>
+            <div class="kanban-block" id="done">
+                <strong>Done</strong>
+            </div>
+            <div class="create-new-task-block" id="create-new-task-block">
+                <strong id="action-description">New Task</strong>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-name">Task</label>
+                    <input class="form-row-input" type="text" name="task-name" id="task-name">
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-name">Description</label>
+                    <textarea class="form-row-input" name="task-description" id="task-description" cols="70" rows="10"></textarea>
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-name">Status</label>
+                    <select class="form-row-input" name="task-status" id="task-status">
+                        <option value="todo">To Do</option>
+                        <option value="inprogress">In Progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                </span>
+                <span class="form-row-buttons">
+                    <button id="edit-button" >Edit</span>
+                    <button id="save-button" >Save</span>
+                    <button id="cancel-button">Cancel</span>
+                    <button id="delete-button">Delete</span>
+                </span>
+            </div>
+            
+        </div>
+        <div class="task-button-block">
+            <button id="task-button">Create new task</span>
+        </div>
+    </div>
+    <script src="site.js"></script>
+</body>
+</html>

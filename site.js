@@ -1,0 +1,323 @@
+"use strict"
+
+
+const tasksModule = {
+     tasks: [],
+
+     createElementID(){
+        let id = this.tasks.length
+        id += 1
+        return String(id)
+    },
+
+    edit(id , name , description , status){
+        for (const index in this.tasks){
+            const task = this.tasks[index]
+            if(task.id === id){
+                task.name = name
+                task.description = description
+                task.status = status
+                this.emit("edit" , task)
+            }
+        }
+    },
+
+    getElementID(name , description , status){
+        for (const element of this.tasks){
+            if (element.name === name && element.description === description && element.status === status){
+                return element.id
+            }
+        }
+    },
+
+     add(name, description , status){
+        const task ={
+            id: this.createElementID(),
+            name: name,
+            description: description,
+            status: status 
+        }
+        this.tasks.push(task)
+        this.emit("add" , task)
+     },
+     remove(id){
+        for (const index in this.tasks){
+            const task = this.tasks[index]
+            if (task.id === id){
+                this.tasks.splice(index , 1)
+                this.emit("remove" , task)
+            }
+        }
+     },
+     events:{},
+     emit(eventName , param){
+        if (eventName in this.events) {
+            for(const f of this.events[eventName]) {
+              f(param)
+            }
+          }
+     },
+     on(eventName, cb){
+        if (!(eventName in this.events)) {
+            this.events[eventName] = []
+          }
+          this.events[eventName].push(cb)
+     }
+}
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+
+const elements = {
+createButton: document.getElementById("task-button"),
+createBlock: document.getElementById("create-new-task-block"),
+done: document.getElementById("done"),
+inprogress: document.getElementById("inprogress"),
+savebutton: document.getElementById("save-button"),
+taskName: document.getElementById("task-name"),
+taskDescription: document.getElementById("task-description"),
+taskstatus: document.getElementById("task-status"),
+cancelButton: document.getElementById("cancel-button"),
+todo: document.getElementById("todo"),
+editButton: document.getElementById("edit-button"),
+delteButton: document.getElementById("delete-button"),
+actiondescription: document.getElementById("action-description")
+
+}
+// modify drag boxes 
+const boxes = []
+
+boxes.push(done)
+boxes.push(inprogress)
+boxes.push(todo)
+
+for(const box of boxes){
+    box.addEventListener("dragenter" , (e) =>{
+        e.preventDefault();
+        e.target.classList.add('drag-over');
+    })
+    box.addEventListener("dragover" , (e) =>{
+        e.preventDefault();
+        e.target.classList.add('drag-over');
+    })
+    box.addEventListener("dragleave" , (e) =>{
+        e.target.classList.remove('drag-over');
+
+    })
+    box.addEventListener("drop" , (e) =>{
+        e.target.classList.remove('drag-over');
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
+
+        if(e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id){
+            tasksModule.edit(id, draggable.id , draggable.classList[2].slice(12) , e.target.id)
+        }
+
+    })
+}
+
+elements.createBlock.classList.add("not-displayed")
+
+function deleteInput(){
+elements.taskName.value = ""
+elements.taskDescription.value = ""
+elements.taskstatus.value = "todo"
+
+}
+
+function toggleCreatewindow(){
+    if (elements.createBlock.classList.contains("displayed")){
+        elements.todo.style.display = "block"
+        elements.done.style.display = "block"
+        elements.inprogress.style.display = "block"
+        elements.createBlock.style.display = "none"
+        elements.createButton.style.display = "block"
+
+        elements.createBlock.classList.remove("displayed")
+        elements.createBlock.classList.add("not-displayed")
+        
+    }else if(elements.createBlock.classList.contains("not-displayed")){
+        elements.todo.style.display = "none"
+        elements.done.style.display = "none"
+        elements.inprogress.style.display = "none"
+        elements.createBlock.style.display = "block"
+        elements.createButton.style.display = "none"
+
+        elements.createBlock.classList.remove("not-displayed")
+        elements.createBlock.classList.add("displayed")
+    }
+
+}
+
+    elements.createButton.addEventListener("click" , (e) =>{
+        elements.savebutton.style.display = "block"
+        elements.editButton.style.display = "none"
+        elements.delteButton.style.display = "none"
+        elements.actiondescription.innerText = "New Task"
+        deleteInput()
+        toggleCreatewindow()
+    })
+
+    elements.cancelButton.addEventListener("click" , (e) =>{
+        const currentId = tasksModule.getElementID(elements.taskName.value, elements.taskDescription.value , elements.taskstatus.value)
+        const currentElement = document.getElementsByClassName(`a-id:${currentId}`)[0]
+
+        if (!currentElement){
+            deleteInput()
+            toggleCreatewindow()
+        return
+        }
+        if (currentElement.classList.contains("in-edit") && currentElement){
+            currentElement.classList.remove("in-edit")
+        }
+        if(elements.createButton.style.display = "none"){
+            elements.createButton.style.display = "block"
+        }
+    
+
+        deleteInput()
+        toggleCreatewindow()
+    })
+
+    elements.savebutton.addEventListener("click" , (e) =>{
+        const inputName = elements.taskName.value
+        const inputDesc = elements.taskDescription.value
+        const inputStatus = elements.taskstatus.value
+
+        for (const task of tasksModule.tasks){
+            if (task.name === inputName && task.description === inputDesc){
+                alert("ToDo besteht bereits")
+                toggleCreatewindow()
+                deleteInput()
+                return
+            }
+        } 
+
+        if(!inputName){
+            return
+        }
+
+            tasksModule.add(inputName , inputDesc , inputStatus)
+            deleteInput()
+            toggleCreatewindow()
+    })
+
+    tasksModule.on("add" , (task) =>{
+        const divElement = document.createElement("div")
+        divElement.setAttribute("id" , task.name)
+        divElement.setAttribute("draggable" , "true")
+        //divElement.setAttribute("data" , task.description)
+        divElement.classList.add("a-id" + ":" + tasksModule.getElementID(task.name , task.description , task.status))
+        divElement.classList.add("task")
+        divElement.classList.add("description:" + task.description) // hier paragraph unterhalb dem divelement einbauen, evtl. display none
+        const spanElement = document.createElement("span")
+        spanElement.innerHTML = task.name
+
+        divElement.appendChild(spanElement)
+
+        if (task.status === "done"){
+            elements.done.appendChild(divElement)
+        }else if(task.status === "todo"){
+            elements.todo.appendChild(divElement)
+        }else if (task.status === "inprogress"){
+            elements.inprogress.appendChild(divElement)
+        }
+
+    })
+
+    tasksModule.on("add" , (task) => {
+        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+
+        element.addEventListener("click" , (e) =>{
+            element.classList.add("in-edit")
+            elements.createButton.style.display = "none"
+            elements.taskName.value = task.name
+            elements.taskDescription.value = task.description // // hier inhalt von paragraph unterhalb dem divelement holen, evtl. display none rausnehmen
+            elements.taskstatus.value = task.status
+            toggleCreatewindow()
+            elements.savebutton.style.display = "none"
+            elements.editButton.style.display = "block"
+            elements.delteButton.style.display = "block"
+            elements.actiondescription.innerText = "Edit Task"
+        })
+
+    })
+    tasksModule.on("add" , (task) => {
+        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+
+        element.addEventListener("dragstart" , (e) =>{
+            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5 , 6))
+            setTimeout(() => {
+                e.target.classList.add('hide')
+            }, 0)
+            element.classList.add("dragged")
+        })
+        element.addEventListener("dragend" , (e) =>{
+            setTimeout(() => {
+                e.target.classList.remove('hide')
+            }, 0)
+        })
+
+    })
+
+    elements.editButton.addEventListener("click" , (e) =>{
+        const task = document.getElementsByClassName("in-edit")[0]
+        const id = task.classList[0].slice(5 , 6)
+
+
+        if(elements.taskName.value){
+            tasksModule.edit(id , elements.taskName.value , elements.taskDescription.value // hier von paragraph unterhalb holen
+             , elements.taskstatus.value)
+            task.classList.replace(task.classList[2] , "description:" + elements.taskDescription.value) // hier paragraph unterhalb ersetzen
+        }
+
+        task.classList.remove("in-edit")
+
+        toggleCreatewindow()
+
+        elements.savebutton.style.display = "block"
+        elements.editButton.style.display = "none"
+
+        deleteInput()
+        elements.createButton.style.display = "block"
+
+    })
+
+    tasksModule.on("edit" , (task) => {
+        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+
+        if (element.classList.contains("dragged")){
+            elements[task.status].append(element)
+            element.classList.remove("dragged")
+        }else{
+            element.id = elements.taskName.value
+            element.childNodes[0].textContent = elements.taskName.value
+            element.description = elements.taskDescription.value // hier schauen
+
+            if (element.parentNode.id !== task.status){
+                elements[task.status].append(element)
+            }
+        } 
+        element.classList.remove("in-edit")  
+    })
+    
+    elements.delteButton.addEventListener("click" , (e) =>{
+        const task = document.getElementsByClassName("in-edit")[0]
+        const taskId = task.classList[0].slice(5 , 6)
+        console.log(taskId)
+        tasksModule.remove(taskId)
+    })
+
+    tasksModule.on("remove" , (task) => {
+        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+        element.remove()
+        toggleCreatewindow()
+    })
+    
+})
