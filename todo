@@ -1,5 +1,7 @@
 /* 
-- fehlende Felder, Reporter, priority, assignee, responsibility, complete/created ad 
 - api calls in edit und delete einbauen
-- description bug fixen
+- schauen was mit id machen
+- neue felder schöner machen
+- fehlende Felder, Reporter, priority, assignee, responsibility, complete/created at .. einbauen
+- schauen wie bei user machen
 */

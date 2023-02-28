@@ -3,6 +3,12 @@
 
 const tasksModule = {
     tasks: [],
+    assignee:{
+        email:null,
+        firstname: null,
+        surname:null,
+        
+    },
 
     createElementID() {
         let id = this.tasks.length
@@ -10,13 +16,19 @@ const tasksModule = {
         return String(id)
     },
 
-    edit(id, name, description, status) {
+    edit(id, name, description, status/*, priority , responsibility , assignee , completed_at , created_at*/) {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
                 task.name = name
                 task.description = description
                 task.status = status
+                /* 
+                task.priority: priority,
+                task.responsibility: responsibility,
+                task.assignee: assignee,
+                task.completed_at: completed_at,
+                task.created_at: created_at*/
                 this.emit("edit", task)
             }
         }
@@ -30,12 +42,17 @@ const tasksModule = {
         }
     },
 
-    add(name, description, status) {
+    add(name, description, status /*, priority , responsibility , assignee , completed_at , created_at*/) {
         const task = {
             id: this.createElementID(),
             name: name,
             description: description,
-            status: status
+            status: status,
+           /* priority: priority,
+            responsibility: responsibility,
+            assignee: assignee,
+            completed_at: completed_at,
+            created_at: created_at*/
         }
         this.tasks.push(task)
         this.emit("add", task)
@@ -334,7 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.delteButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
         const taskId = task.classList[0].slice(5, 6)
-        console.log(taskId)
         tasksModule.remove(taskId)
     })
 
