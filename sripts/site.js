@@ -3,11 +3,11 @@
 
 const tasksModule = {
     tasks: [],
-    assignee:{
-        email:null,
+    assignee: {
+        email: null,
         firstname: null,
-        surname:null,
-        
+        surname: null,
+
     },
 
     createElementID() {
@@ -48,11 +48,11 @@ const tasksModule = {
             name: name,
             description: description,
             status: status,
-           /* priority: priority,
-            responsibility: responsibility,
-            assignee: assignee,
-            completed_at: completed_at,
-            created_at: created_at*/
+            /* priority: priority,
+             responsibility: responsibility,
+             assignee: assignee,
+             completed_at: completed_at,
+             created_at: created_at*/
         }
         this.tasks.push(task)
         this.emit("add", task)
@@ -361,26 +361,33 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     // Anbindung an die API
-    /*   tasksModule.on("add" , (task) =>{
-   
-           const data = {id: task.id ,description: task.description , priority: "low", assignee: "", responsibility: "development" , title: task.name , status: task.status , reporter: ""};
-   
-           fetch("http://localhost:8081/todos", {
-               method: "POST", // or 'PUT'
-               headers: {
-                   "Content-Type": "application/json",
-               },
-               body: JSON.stringify(data),
-           })
-               .then((response) => response.json())
-               .then((data) => {
-                   console.log("Success:", data);
-               })
-               .catch((error) => {
-                   console.error("Error:", error);
-               });
-   
-       })*/
+    tasksModule.on("add", (task) => {
+        const data = {
+            id: task.id,
+            description: task.description,
+            priority: "low",
+            assignee: "",
+            responsibility: "development",
+            title: task.name,
+            status: task.status,
+            reporter: ""
+        };
+
+        fetch("http://localhost:8081/todos", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data)
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Success:", data);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    })
 })
 
 /*	Id int32 `json:"id,omitempty"`
