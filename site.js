@@ -2,67 +2,67 @@
 
 
 const tasksModule = {
-     tasks: [],
+    tasks: [],
 
-     createElementID(){
+    createElementID() {
         let id = this.tasks.length
         id += 1
         return String(id)
     },
 
-    edit(id , name , description , status){
-        for (const index in this.tasks){
+    edit(id, name, description, status) {
+        for (const index in this.tasks) {
             const task = this.tasks[index]
-            if(task.id === id){
+            if (task.id === id) {
                 task.name = name
                 task.description = description
                 task.status = status
-                this.emit("edit" , task)
+                this.emit("edit", task)
             }
         }
     },
 
-    getElementID(name , description , status){
-        for (const element of this.tasks){
-            if (element.name === name && element.description === description && element.status === status){
+    getElementID(name, description, status) {
+        for (const element of this.tasks) {
+            if (element.name === name && element.description === description && element.status === status) {
                 return element.id
             }
         }
     },
 
-     add(name, description , status){
-        const task ={
+    add(name, description, status) {
+        const task = {
             id: this.createElementID(),
             name: name,
             description: description,
-            status: status 
+            status: status
         }
         this.tasks.push(task)
-        this.emit("add" , task)
-     },
-     remove(id){
-        for (const index in this.tasks){
+        this.emit("add", task)
+    },
+    remove(id) {
+        for (const index in this.tasks) {
             const task = this.tasks[index]
-            if (task.id === id){
-                this.tasks.splice(index , 1)
-                this.emit("remove" , task)
+            if (task.id === id) {
+                this.tasks.splice(index, 1)
+                this.emit("remove", task)
             }
         }
-     },
-     events:{},
-     emit(eventName , param){
+    },
+    events: {},
+    emit(eventName, param) {
         if (eventName in this.events) {
-            for(const f of this.events[eventName]) {
-              f(param)
+            for (const f of this.events[eventName]) {
+                f(param)
             }
-          }
-     },
-     on(eventName, cb){
+        }
+    },
+    on(eventName, cb) {
         if (!(eventName in this.events)) {
             this.events[eventName] = []
-          }
-          this.events[eventName].push(cb)
-     }
+        }
+        this.events[eventName].push(cb)
+    }
 }
 
 
@@ -73,89 +73,103 @@ const tasksModule = {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-const elements = {
-createButton: document.getElementById("task-button"),
-createBlock: document.getElementById("create-new-task-block"),
-done: document.getElementById("done"),
-inprogress: document.getElementById("inprogress"),
-savebutton: document.getElementById("save-button"),
-taskName: document.getElementById("task-name"),
-taskDescription: document.getElementById("task-description"),
-taskstatus: document.getElementById("task-status"),
-cancelButton: document.getElementById("cancel-button"),
-todo: document.getElementById("todo"),
-editButton: document.getElementById("edit-button"),
-delteButton: document.getElementById("delete-button"),
-actiondescription: document.getElementById("action-description")
+    const elements = {
+        createButton: document.getElementById("task-button"),
+        createBlock: document.getElementById("create-new-task-block"),
+        done: document.getElementById("done"),
+        inprogress: document.getElementById("inprogress"),
+        savebutton: document.getElementById("save-button"),
+        taskName: document.getElementById("task-name"),
+        taskDescription: document.getElementById("task-description"),
+        taskstatus: document.getElementById("task-status"),
+        cancelButton: document.getElementById("cancel-button"),
+        todo: document.getElementById("todo"),
+        editButton: document.getElementById("edit-button"),
+        delteButton: document.getElementById("delete-button"),
+        actiondescription: document.getElementById("action-description")
 
-}
-// modify drag boxes 
-const boxes = []
+    }
+    // modify drag boxes 
+    const boxes = []
 
-boxes.push(done)
-boxes.push(inprogress)
-boxes.push(todo)
+    boxes.push(done)
+    boxes.push(inprogress)
+    boxes.push(todo)
 
-for(const box of boxes){
-    box.addEventListener("dragenter" , (e) =>{
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-    })
-    box.addEventListener("dragover" , (e) =>{
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-    })
-    box.addEventListener("dragleave" , (e) =>{
-        e.target.classList.remove('drag-over');
+    for (const box of boxes) {
+        box.addEventListener("dragenter", (e) => {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        })
+        box.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        })
+        box.addEventListener("dragleave", (e) => {
+            e.target.classList.remove('drag-over');
 
-    })
-    box.addEventListener("drop" , (e) =>{
-        e.target.classList.remove('drag-over');
-        e.preventDefault();
-        const id = e.dataTransfer.getData('text/plain');
-        const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
+        })
+        box.addEventListener("drop", (e) => {
+            e.target.classList.remove('drag-over');
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
 
-        if(e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id){
-            tasksModule.edit(id, draggable.id , draggable.classList[2].slice(12) , e.target.id)
-        }
+            if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
+                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).value, e.target.id) // hier ändern --> draggable.classList[2].slice(12)
+            }
 
-    })
-}
-
-elements.createBlock.classList.add("not-displayed")
-
-function deleteInput(){
-elements.taskName.value = ""
-elements.taskDescription.value = ""
-elements.taskstatus.value = "todo"
-
-}
-
-function toggleCreatewindow(){
-    if (elements.createBlock.classList.contains("displayed")){
-        elements.todo.style.display = "block"
-        elements.done.style.display = "block"
-        elements.inprogress.style.display = "block"
-        elements.createBlock.style.display = "none"
-        elements.createButton.style.display = "block"
-
-        elements.createBlock.classList.remove("displayed")
-        elements.createBlock.classList.add("not-displayed")
-        
-    }else if(elements.createBlock.classList.contains("not-displayed")){
-        elements.todo.style.display = "none"
-        elements.done.style.display = "none"
-        elements.inprogress.style.display = "none"
-        elements.createBlock.style.display = "block"
-        elements.createButton.style.display = "none"
-
-        elements.createBlock.classList.remove("not-displayed")
-        elements.createBlock.classList.add("displayed")
+        })
     }
 
-}
+    elements.createBlock.classList.add("not-displayed")
 
-    elements.createButton.addEventListener("click" , (e) =>{
+
+    // "Hilfs" - Funktionen
+    function deleteInput() {
+        elements.taskName.value = ""
+        elements.taskDescription.value = ""
+        elements.taskstatus.value = "todo"
+
+    }
+
+    function toggleCreatewindow() {
+        if (elements.createBlock.classList.contains("displayed")) {
+            elements.todo.style.display = "block"
+            elements.done.style.display = "block"
+            elements.inprogress.style.display = "block"
+            elements.createBlock.style.display = "none"
+            elements.createButton.style.display = "block"
+
+            elements.createBlock.classList.remove("displayed")
+            elements.createBlock.classList.add("not-displayed")
+
+        } else if (elements.createBlock.classList.contains("not-displayed")) {
+            elements.todo.style.display = "none"
+            elements.done.style.display = "none"
+            elements.inprogress.style.display = "none"
+            elements.createBlock.style.display = "block"
+            elements.createButton.style.display = "none"
+
+            elements.createBlock.classList.remove("not-displayed")
+            elements.createBlock.classList.add("displayed")
+        }
+
+    }
+    function findDescriptionElement(element) {
+        var description = null
+
+        for (var i = 0; i < element.childNodes.length; i++) {
+            if (element.childNodes[i].className == "description") {
+                element.childNodes[i]
+                description = element.childNodes[i]
+
+            }
+        }
+        return description
+    }
+
+    elements.createButton.addEventListener("click", (e) => {
         elements.savebutton.style.display = "block"
         elements.editButton.style.display = "none"
         elements.delteButton.style.display = "none"
@@ -164,81 +178,90 @@ function toggleCreatewindow(){
         toggleCreatewindow()
     })
 
-    elements.cancelButton.addEventListener("click" , (e) =>{
-        const currentId = tasksModule.getElementID(elements.taskName.value, elements.taskDescription.value , elements.taskstatus.value)
+    elements.cancelButton.addEventListener("click", (e) => {
+        const currentId = tasksModule.getElementID(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
         const currentElement = document.getElementsByClassName(`a-id:${currentId}`)[0]
 
-        if (!currentElement){
+        if (!currentElement) {
             deleteInput()
             toggleCreatewindow()
-        return
+            return
         }
-        if (currentElement.classList.contains("in-edit") && currentElement){
+        if (currentElement.classList.contains("in-edit") && currentElement) {
             currentElement.classList.remove("in-edit")
         }
-        if(elements.createButton.style.display = "none"){
+        if (elements.createButton.style.display = "none") {
             elements.createButton.style.display = "block"
         }
-    
+
 
         deleteInput()
         toggleCreatewindow()
     })
 
-    elements.savebutton.addEventListener("click" , (e) =>{
+    elements.savebutton.addEventListener("click", (e) => {
         const inputName = elements.taskName.value
         const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
 
-        for (const task of tasksModule.tasks){
-            if (task.name === inputName && task.description === inputDesc){
+        for (const task of tasksModule.tasks) {
+            if (task.name === inputName && task.description === inputDesc) {
                 alert("ToDo besteht bereits")
                 toggleCreatewindow()
                 deleteInput()
                 return
             }
-        } 
+        }
 
-        if(!inputName){
+        if (!inputName) {
             return
         }
 
-            tasksModule.add(inputName , inputDesc , inputStatus)
-            deleteInput()
-            toggleCreatewindow()
+        tasksModule.add(inputName, inputDesc, inputStatus)
+        deleteInput()
+        toggleCreatewindow()
     })
 
-    tasksModule.on("add" , (task) =>{
+    tasksModule.on("add", (task) => {
         const divElement = document.createElement("div")
-        divElement.setAttribute("id" , task.name)
-        divElement.setAttribute("draggable" , "true")
+        divElement.setAttribute("id", task.name)
+        divElement.setAttribute("draggable", "true")
         //divElement.setAttribute("data" , task.description)
-        divElement.classList.add("a-id" + ":" + tasksModule.getElementID(task.name , task.description , task.status))
+        divElement.classList.add("a-id" + ":" + tasksModule.getElementID(task.name, task.description, task.status))
         divElement.classList.add("task")
-        divElement.classList.add("description:" + task.description) // hier paragraph unterhalb dem divelement einbauen, evtl. display none
-        const spanElement = document.createElement("span")
-        spanElement.innerHTML = task.name
+        //divElement.classList.add("description:" + task.description) // hier paragraph unterhalb dem divelement einbauen, evtl. display none
+        const spanElementId = document.createElement("span")
+        spanElementId.setAttribute("id", task.name)
+        spanElementId.innerHTML = task.name
 
-        divElement.appendChild(spanElement)
+        divElement.appendChild(spanElementId)
 
-        if (task.status === "done"){
+        const spanElementDesc = document.createElement("span")
+        spanElementDesc.setAttribute("description", task.name)
+        spanElementDesc.classList.add("description")
+        spanElementDesc.setAttribute("hidden", "hidden")
+        spanElementDesc.innerHTML = task.description
+
+        divElement.appendChild(spanElementDesc)
+
+        if (task.status === "done") {
             elements.done.appendChild(divElement)
-        }else if(task.status === "todo"){
+        } else if (task.status === "todo") {
             elements.todo.appendChild(divElement)
-        }else if (task.status === "inprogress"){
+        } else if (task.status === "inprogress") {
             elements.inprogress.appendChild(divElement)
         }
 
     })
 
-    tasksModule.on("add" , (task) => {
-        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+    tasksModule.on("add", (task) => {
+        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
 
-        element.addEventListener("click" , (e) =>{
+        element.addEventListener("click", (e) => {
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
             elements.taskName.value = task.name
-            elements.taskDescription.value = task.description // // hier inhalt von paragraph unterhalb dem divelement holen, evtl. display none rausnehmen
+            elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
@@ -248,17 +271,17 @@ function toggleCreatewindow(){
         })
 
     })
-    tasksModule.on("add" , (task) => {
-        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+    tasksModule.on("add", (task) => {
+        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
 
-        element.addEventListener("dragstart" , (e) =>{
-            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5 , 6))
+        element.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5, 6))
             setTimeout(() => {
                 e.target.classList.add('hide')
             }, 0)
             element.classList.add("dragged")
         })
-        element.addEventListener("dragend" , (e) =>{
+        element.addEventListener("dragend", (e) => {
             setTimeout(() => {
                 e.target.classList.remove('hide')
             }, 0)
@@ -266,15 +289,16 @@ function toggleCreatewindow(){
 
     })
 
-    elements.editButton.addEventListener("click" , (e) =>{
+    elements.editButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const id = task.classList[0].slice(5 , 6)
+        const id = task.classList[0].slice(5, 6)
+        var description = findDescriptionElement(task)
 
-
-        if(elements.taskName.value){
-            tasksModule.edit(id , elements.taskName.value , elements.taskDescription.value // hier von paragraph unterhalb holen
-             , elements.taskstatus.value)
-            task.classList.replace(task.classList[2] , "description:" + elements.taskDescription.value) // hier paragraph unterhalb ersetzen
+        if (elements.taskName.value) {
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value
+                , elements.taskstatus.value)
+            //task.classList.replace(task.classList[2] , "description:" + elements.taskDescription.value)
+            description.value = elements.taskDescription.value
         }
 
         task.classList.remove("in-edit")
@@ -289,35 +313,86 @@ function toggleCreatewindow(){
 
     })
 
-    tasksModule.on("edit" , (task) => {
-        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+    tasksModule.on("edit", (task) => {
+        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
 
-        if (element.classList.contains("dragged")){
+        if (element.classList.contains("dragged")) {
             elements[task.status].append(element)
             element.classList.remove("dragged")
-        }else{
+        } else {
             element.id = elements.taskName.value
             element.childNodes[0].textContent = elements.taskName.value
-            element.description = elements.taskDescription.value // hier schauen
+            element.description = elements.taskDescription.value
 
-            if (element.parentNode.id !== task.status){
+            if (element.parentNode.id !== task.status) {
                 elements[task.status].append(element)
             }
-        } 
-        element.classList.remove("in-edit")  
+        }
+        element.classList.remove("in-edit")
     })
-    
-    elements.delteButton.addEventListener("click" , (e) =>{
+
+    elements.delteButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const taskId = task.classList[0].slice(5 , 6)
+        const taskId = task.classList[0].slice(5, 6)
         console.log(taskId)
         tasksModule.remove(taskId)
     })
 
-    tasksModule.on("remove" , (task) => {
-        const element   = document.getElementsByClassName(`a-id:${task.id}`)[0]
+    tasksModule.on("remove", (task) => {
+        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
         element.remove()
         toggleCreatewindow()
     })
-    
+
+    // Anbindung an die API
+    /*   tasksModule.on("add" , (task) =>{
+   
+           const data = {id: task.id ,description: task.description , priority: "low", assignee: "", responsibility: "development" , title: task.name , status: task.status , reporter: ""};
+   
+           fetch("http://localhost:8081/todos", {
+               method: "POST", // or 'PUT'
+               headers: {
+                   "Content-Type": "application/json",
+               },
+               body: JSON.stringify(data),
+           })
+               .then((response) => response.json())
+               .then((data) => {
+                   console.log("Success:", data);
+               })
+               .catch((error) => {
+                   console.error("Error:", error);
+               });
+   
+       })*/
 })
+
+/*	Id int32 `json:"id,omitempty"`
+
+    Description string `json:"description"`
+
+    Title string `json:"title"`
+
+    Reporter *User `json:"reporter"`
+
+    Assignee *User `json:"assignee,omitempty"`
+
+    Responsibility string `json:"responsibility"`
+
+    Status string `json:"status"`
+
+    Priority string `json:"priority"`
+
+    CreatedAt time.Time `json:"created_at,omitempty"`
+
+    CompletedAt time.Time `json:"completed_at,omitempty"`
+    
+    
+          required:
+      - description
+      - priority
+      - reporter
+      - responsibility
+      - status
+      - title
+      */
