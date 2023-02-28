@@ -4,4 +4,5 @@
 - neue felder schöner machen
 - fehlende Felder, Reporter, priority, assignee, responsibility, complete/created at .. einbauen
 - schauen wie bei user machen
+- in line 364         //if(task. .. == internal) --> machen , wenn external dann nicht machen , feld in der Task mit internal true oder false, evtl. als optionales feld
 */

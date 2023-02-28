@@ -218,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.savebutton.addEventListener("click", (e) => {
         const inputName = elements.taskName.value
-        const inputDesc = elements.taskDescription.value
+        const inputDesc = elements.taskDescription.value //hier in span reinschreiben?!
         const inputStatus = elements.taskstatus.value
 
         for (const task of tasksModule.tasks) {
@@ -260,7 +260,6 @@ document.addEventListener("DOMContentLoaded", () => {
         spanElementDesc.innerHTML = task.description
 
         divElement.appendChild(spanElementDesc)
-
         if (task.status === "done") {
             elements.done.appendChild(divElement)
         } else if (task.status === "todo") {
@@ -273,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tasksModule.on("add", (task) => {
         const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
-
+        console.log(element)
         element.addEventListener("click", (e) => {
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
@@ -362,6 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Anbindung an die API
     tasksModule.on("add", (task) => {
+
         const data = {
             id: task.id,
             description: task.description,
@@ -388,6 +388,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", error);
             });
     })
+
+    function GetTodosOfApi() {
+        fetch("http://localhost:8081/todos", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                for (const todo of data) {
+                    console.log(todo)
+                    if (tasksModule.tasks.length == 0) {
+                        tasksModule.add(todo.title, todo.description, todo.status)
+                    }
+                    for (var i = 0; i > tasksModule.tasks.length; i++) {
+                        if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
+                            break
+                        } else {
+                            tasksModule.add(todo.title, todo.description, todo.status)
+                        }
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+
+        setTimeout(GetTodosOfApi, 10000);
+    }
+    GetTodosOfApi();
+
+
 })
 
 /*	Id int32 `json:"id,omitempty"`
