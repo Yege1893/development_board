@@ -3,6 +3,12 @@
 
 const tasksModule = {
     tasks: [],
+    assignee: {
+        email: null,
+        firstname: null,
+        surname: null,
+
+    },
 
     createElementID() {
         let id = this.tasks.length
@@ -10,13 +16,19 @@ const tasksModule = {
         return String(id)
     },
 
-    edit(id, name, description, status) {
+    edit(id, name, description, status/*, priority , responsibility , assignee , completed_at , created_at*/) {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
                 task.name = name
                 task.description = description
                 task.status = status
+                /* 
+                task.priority: priority,
+                task.responsibility: responsibility,
+                task.assignee: assignee,
+                task.completed_at: completed_at,
+                task.created_at: created_at*/
                 this.emit("edit", task)
             }
         }
@@ -30,12 +42,18 @@ const tasksModule = {
         }
     },
 
-    add(name, description, status) {
+    add(name, description, status /*, priority , responsibility , assignee , completed_at , created_at*/, external = 'defaultValue') {
         const task = {
             id: this.createElementID(),
             name: name,
             description: description,
-            status: status
+            status: status,
+            /* priority: priority,
+             responsibility: responsibility,
+             assignee: assignee,
+             completed_at: completed_at,
+             created_at: created_at*/
+             external: external,
         }
         this.tasks.push(task)
         this.emit("add", task)
@@ -201,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.savebutton.addEventListener("click", (e) => {
         const inputName = elements.taskName.value
-        const inputDesc = elements.taskDescription.value
+        const inputDesc = elements.taskDescription.value //hier in span reinschreiben?!
         const inputStatus = elements.taskstatus.value
 
         for (const task of tasksModule.tasks) {
@@ -243,7 +261,6 @@ document.addEventListener("DOMContentLoaded", () => {
         spanElementDesc.innerHTML = task.description
 
         divElement.appendChild(spanElementDesc)
-
         if (task.status === "done") {
             elements.done.appendChild(divElement)
         } else if (task.status === "todo") {
@@ -256,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tasksModule.on("add", (task) => {
         const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
-
+        console.log(element)
         element.addEventListener("click", (e) => {
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
@@ -334,7 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.delteButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
         const taskId = task.classList[0].slice(5, 6)
-        console.log(taskId)
         tasksModule.remove(taskId)
     })
 
@@ -345,26 +361,79 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     // Anbindung an die API
-    /*   tasksModule.on("add" , (task) =>{
-   
-           const data = {id: task.id ,description: task.description , priority: "low", assignee: "", responsibility: "development" , title: task.name , status: task.status , reporter: ""};
-   
-           fetch("http://localhost:8081/todos", {
-               method: "POST", // or 'PUT'
-               headers: {
-                   "Content-Type": "application/json",
-               },
-               body: JSON.stringify(data),
-           })
-               .then((response) => response.json())
-               .then((data) => {
-                   console.log("Success:", data);
-               })
-               .catch((error) => {
-                   console.error("Error:", error);
-               });
-   
-       })*/
+    tasksModule.on("add", (task) => {
+        if(task.external === true){
+            return
+        }
+
+        const data = {
+                "completed_at": "2023-02-20T04:59:12.000+00:00",
+                "responsibility": "development",
+                "description": "This is the Description.",
+                "created_at": "2023-02-10T18:23:01.000+00:00",
+                "reporter": {
+                  "firstname": "Bob",
+                  "role": "development",
+                  "surname": "Baumeister",
+                  "id": 8,
+                  "email": "bob.bau@example.com"
+                },
+                "id": 2,
+                "assignee": {},
+                "title": "This is the Title.",
+                "priority": "low",
+                "status": "created"    
+              
+        };
+
+        fetch("http://localhost:8081/todos", {
+            method: "POST",
+            //headers: {
+            //    "Content-Type": "application/json",
+            //},
+            body: JSON.stringify(data)
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Success:", data);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    })
+
+    function GetTodosOfApi() {
+        fetch("http://localhost:8081/todos", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                for (const todo of data) {
+                    console.log(todo)
+                    if (tasksModule.tasks.length == 0) {
+                        tasksModule.add(todo.title, todo.description, todo.status , true)
+                    }// schleife funktioniert noch nicht.
+                    for (var i = 0; i > tasksModule.tasks.length; i++) {
+                        if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
+                            break
+                        } else {
+                            tasksModule.add(todo.title, todo.description, todo.status , true)
+                        }
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+
+        setTimeout(GetTodosOfApi, 10000);
+    }
+    GetTodosOfApi();
+
+
 })
 
 /*	Id int32 `json:"id,omitempty"`

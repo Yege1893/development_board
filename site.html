@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="./site.css">
+    <link rel="stylesheet" href="/styles/site.css">
     <title>Kanban Board</title>
 </head>
 <body>
@@ -26,8 +26,39 @@
                     <input class="form-row-input" type="text" name="task-name" id="task-name">
                 </span>
                 <span class="form-row">
+                    <label class="form-row-label" for="task-created_at">Created at</label>
+                    <input class="form-row-input" type="text" name="task-created_at" id="task-created_at">
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-completed_at">Completed at</label>
+                    <input class="form-row-input" type="text" name="task-completed_at" id="task-completed_at">
+                </span>
+                <span class="form-row">
                     <label class="form-row-label" for="task-name">Description</label>
                     <textarea class="form-row-input" name="task-description" id="task-description" wrap=virtual cols="70" rows="10"></textarea>
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-assignee">Assginee</label>
+                    <input class="form-row-input" type="text" name="task-assginee" id="task-assginee">
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-reporter">Reporter</label>
+                    <input class="form-row-input" type="text" name="task-reporter" id="task-reporter">
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-responsibility">Responsibility</label>
+                    <select class="form-row-input" name="task-responsibility" id="task-responsibility">
+                        <option value="development">Development</option>
+                        <option value="support">Support</option>
+                    </select>
+                </span>
+                <span class="form-row">
+                    <label class="form-row-label" for="task-priority">Priority</label>
+                    <select class="form-row-input" name="task-priority" id="task-priority">
+                        <option value="low">Low</option>
+                        <option value="middle">Middle</option>
+                        <option value="high">High</option>
+                    </select>
                 </span>
                 <span class="form-row">
                     <label class="form-row-label" for="task-name">Status</label>
@@ -50,6 +81,6 @@
             <button id="task-button">Create new task</span>
         </div>
     </div>
-    <script src="site.js"></script>
+    <script src="/sripts/site.js"></script>
 </body>
 </html>
