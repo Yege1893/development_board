@@ -42,7 +42,7 @@ const tasksModule = {
         }
     },
 
-    add(name, description, status /*, priority , responsibility , assignee , completed_at , created_at*/) {
+    add(name, description, status /*, priority , responsibility , assignee , completed_at , created_at*/, external = 'defaultValue') {
         const task = {
             id: this.createElementID(),
             name: name,
@@ -53,6 +53,7 @@ const tasksModule = {
              assignee: assignee,
              completed_at: completed_at,
              created_at: created_at*/
+             external: external,
         }
         this.tasks.push(task)
         this.emit("add", task)
@@ -361,23 +362,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Anbindung an die API
     tasksModule.on("add", (task) => {
+        if(task.external === true){
+            return
+        }
 
         const data = {
-            id: task.id,
-            description: task.description,
-            priority: "low",
-            assignee: "",
-            responsibility: "development",
-            title: task.name,
-            status: task.status,
-            reporter: ""
+                "completed_at": "2023-02-20T04:59:12.000+00:00",
+                "responsibility": "development",
+                "description": "This is the Description.",
+                "created_at": "2023-02-10T18:23:01.000+00:00",
+                "reporter": {
+                  "firstname": "Bob",
+                  "role": "development",
+                  "surname": "Baumeister",
+                  "id": 8,
+                  "email": "bob.bau@example.com"
+                },
+                "id": 2,
+                "assignee": {},
+                "title": "This is the Title.",
+                "priority": "low",
+                "status": "created"    
+              
         };
 
         fetch("http://localhost:8081/todos", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            //headers: {
+            //    "Content-Type": "application/json",
+            //},
             body: JSON.stringify(data)
         })
             .then((response) => response.json())
@@ -401,13 +414,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 for (const todo of data) {
                     console.log(todo)
                     if (tasksModule.tasks.length == 0) {
-                        tasksModule.add(todo.title, todo.description, todo.status)
-                    }
+                        tasksModule.add(todo.title, todo.description, todo.status , true)
+                    }// schleife funktioniert noch nicht.
                     for (var i = 0; i > tasksModule.tasks.length; i++) {
                         if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
                             break
                         } else {
-                            tasksModule.add(todo.title, todo.description, todo.status)
+                            tasksModule.add(todo.title, todo.description, todo.status , true)
                         }
                     }
                 }
