@@ -388,9 +388,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         fetch("http://localhost:8081/todos", {
             method: "POST",
-            //headers: {
-            //    "Content-Type": "application/json",
-            //},
             body: JSON.stringify(data)
         })
             .then((response) => response.json())
@@ -412,16 +409,18 @@ document.addEventListener("DOMContentLoaded", () => {
             .then((response) => response.json())
             .then((data) => {
                 for (const todo of data) {
-                    console.log(todo)
-                    if (tasksModule.tasks.length == 0) {
-                        tasksModule.add(todo.title, todo.description, todo.status , true)
-                    }// schleife funktioniert noch nicht.
-                    for (var i = 0; i > tasksModule.tasks.length; i++) {
+                    var contains = false
+                    for (var i = 0; i < tasksModule.tasks.length; i++) {
+                        console.log(tasksModule.tasks[i] ,1)
                         if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
+                            contains = true
+                            console.log(tasksModule.tasks[i],2)
                             break
-                        } else {
-                            tasksModule.add(todo.title, todo.description, todo.status , true)
-                        }
+                        }  
+                    }
+                    if (!contains){
+                        console.log(tasksModule.tasks[i],3)
+                        tasksModule.add(todo.title, todo.description, todo.status , true)
                     }
                 }
             })
@@ -435,33 +434,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 })
-
-/*	Id int32 `json:"id,omitempty"`
-
-    Description string `json:"description"`
-
-    Title string `json:"title"`
-
-    Reporter *User `json:"reporter"`
-
-    Assignee *User `json:"assignee,omitempty"`
-
-    Responsibility string `json:"responsibility"`
-
-    Status string `json:"status"`
-
-    Priority string `json:"priority"`
-
-    CreatedAt time.Time `json:"created_at,omitempty"`
-
-    CompletedAt time.Time `json:"completed_at,omitempty"`
-    
-    
-          required:
-      - description
-      - priority
-      - reporter
-      - responsibility
-      - status
-      - title
-      */
