@@ -3,6 +3,7 @@
 
 const tasksModule = {
     tasks: [],
+
     assignee: {
         email: null,
         firstname: null,
@@ -360,17 +361,72 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCreatewindow()
     })
 
-    // Anbindung an die API
+//////////////////////////// Anbindung an die API //////////////////////////////////////
+
+// Synchronisation mit der Dev API    
+
+function GetTodosOfApi() {
+    fetch("http://localhost:8081/todos", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            for (const todo of data) {
+                var contains = false
+                if(todo.status === "created" || todo.status === "on_hold"){
+                    todo.status = "todo"
+                }if (todo.status === "in_progress"){
+                    todo.status = "inprogress"
+                }
+                for (var i = 0; i < tasksModule.tasks.length; i++) {
+                    if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
+                        contains = true
+                        break
+                    }  
+                }
+                if (!contains){
+                    tasksModule.add(todo.title, todo.description, todo.status , true)
+                }
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
+
+    setTimeout(GetTodosOfApi, 10000);
+}
+GetTodosOfApi();
+
+// neues ToDo posten
+
     tasksModule.on("add", (task) => {
+        var StatusToSend = ""
         if(task.external === true){
             return
         }
 
+        const now = new Date();
+        const current_time = now.toISOString().replace("Z", "+00:00");
+
+        var completed_at = "2000-01-20T01:00:00.000+00:00"
+        if(task.status === "done"){
+            completed_at = current_time
+        }
+        if(task.status === "todo"){
+            StatusToSend = "created"
+        }
+        if (task.status === "inprogress"){
+            StatusToSend = "in_progress"
+        }
+
         const data = {
-                "completed_at": "2023-02-20T04:59:12.000+00:00",
+                "completed_at": completed_at,
                 "responsibility": "development",
-                "description": "This is the Description.",
-                "created_at": "2023-02-10T18:23:01.000+00:00",
+                "description": task.description,
+                "created_at": current_time,
                 "reporter": {
                   "firstname": "Bob",
                   "role": "development",
@@ -378,14 +434,13 @@ document.addEventListener("DOMContentLoaded", () => {
                   "id": 8,
                   "email": "bob.bau@example.com"
                 },
-                "id": 2,
+                "id": parseInt(task.id),
                 "assignee": {},
-                "title": "This is the Title.",
+                "title": task.name,
                 "priority": "low",
-                "status": "created"    
+                "status": StatusToSend    
               
         };
-
         fetch("http://localhost:8081/todos", {
             method: "POST",
             body: JSON.stringify(data)
@@ -398,39 +453,5 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", error);
             });
     })
-
-    function GetTodosOfApi() {
-        fetch("http://localhost:8081/todos", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                for (const todo of data) {
-                    var contains = false
-                    for (var i = 0; i < tasksModule.tasks.length; i++) {
-                        console.log(tasksModule.tasks[i] ,1)
-                        if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
-                            contains = true
-                            console.log(tasksModule.tasks[i],2)
-                            break
-                        }  
-                    }
-                    if (!contains){
-                        console.log(tasksModule.tasks[i],3)
-                        tasksModule.add(todo.title, todo.description, todo.status , true)
-                    }
-                }
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-            });
-
-        setTimeout(GetTodosOfApi, 10000);
-    }
-    GetTodosOfApi();
-
 
 })
