@@ -17,7 +17,7 @@ const tasksModule = {
         return String(id)
     },
 
-    edit(id, name, description, status/*, priority , assignee , completed_at */) {
+    edit(id, name, description, status/*, priority , assignee , completed_at */, external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
@@ -28,6 +28,7 @@ const tasksModule = {
                 task.priority: priority,
                 task.assignee: assignee,
                 task.completed_at: completed_at,*/
+                task.external = external,
                 this.emit("edit", task)
             }
         }
@@ -369,22 +370,54 @@ document.addEventListener("DOMContentLoaded", () => {
    
 //////////////////////////// Anbindung an die API //////////////////////////////////////
 
+// Synchronisation mit der Dev API  
 
+function GetTodosOfApi() {
+    fetch("http://localhost:8081/todos", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            for (const todo of data) {
+                var contains = false
+                if(todo.status === "created" || todo.status === "on_hold"){
+                    todo.status = "todo"
+                }if (todo.status === "in_progress"){
+                    todo.status = "inprogress"
+                }
+                for (var i = 0; i < tasksModule.tasks.length; i++) {
+                    if (parseInt(tasksModule.tasks[i].id) === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
+                        contains = true
+                        //console.log(tasksModule.tasks[i].name , todo.title , tasksModule.tasks[i].description , todo.description , tasksModule.tasks[i].status , todo.status)
+                        if(tasksModule.tasks[i].name !== todo.title || tasksModule.tasks[i].description !== todo.description || tasksModule.tasks[i].status !== todo.status /*|| tasksModule.tasks[i].priority !== todo.priority*/){
+                            console.log("hallo" , tasksModule.tasks , todo)    
+                           // tasksModule.edit(todo.id , todo.title , todo.description , todo.status , -1)
+                             }
+                        break
+                    }  
+                }
+                if (!contains){
+                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status , true)
+                }
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
 
-function PostToDevApi(task , method){
+    setTimeout(GetTodosOfApi, 10000);
+}
+GetTodosOfApi();
+
+// initialisierung von data machen!
+function PostToDevApi(task){
     var StatusToSend = ""
-    if(method == "add" && task.external === true){
+    if(task.external === true){
         return
     }
-    if(method == "remove"){
-        // modified at abändern 
-        task.status = "deleted"
-        StatusToSend = "deleted"
-    }
-    if(method == "edit"){
-        // modified at abändern
-    }
-
     const now = new Date();
     const current_time = now.toISOString().replace("Z", "+00:00");
 
@@ -431,64 +464,90 @@ function PostToDevApi(task , method){
         });
 }
 
-// Synchronisation mit der Dev API  
+function PutToDevAPI(task){
+    var StatusToSend = ""
+    if(task.external === -1){ // soll nur beim update von der GetTodosApi nicht schicken
+        task.external += 1
+        return
+    }
 
-function GetTodosOfApi() {
-    fetch("http://localhost:8081/todos", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
+    const now = new Date();
+    const current_time = now.toISOString().replace("Z", "+00:00");
+
+    var completed_at = "2000-01-20T01:00:00.000+00:00"
+    if(task.status === "done"){
+        completed_at = current_time
+    }
+    if(task.status === "todo"){
+        StatusToSend = "created"
+    }
+    if (task.status === "inprogress"){
+        StatusToSend = "in_progress"
+    }
+
+    const data = {
+            "completed_at": completed_at,
+            "responsibility": "development",
+            "description": task.description,
+            "created_at": current_time,
+            "reporter": {
+              "firstname": "Bob",
+              "role": "development",
+              "surname": "Baumeister",
+              "id": 8,
+              "email": "bob.bau@example.com"
+            },
+            "id": parseInt(task.id),
+            "assignee": {},
+            "title": task.name,
+            "priority": "low",
+            "status": StatusToSend    
+          
+    };
+    fetch("http://localhost:8081/todos/" + task.id , {
+        method: "PUT",
+        body: JSON.stringify(data)
     })
         .then((response) => response.json())
         .then((data) => {
-            for (const todo of data) {
-                var contains = false
-                if(todo.status === "created" || todo.status === "on_hold"){
-                    todo.status = "todo"
-                }if (todo.status === "in_progress"){
-                    todo.status = "inprogress"
-                }
-                for (var i = 0; i < tasksModule.tasks.length; i++) {
-                    if (parseInt(tasksModule.tasks[i].id) === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
-                        contains = true
-                        //console.log(tasksModule.tasks[i].name , todo.title , tasksModule.tasks[i].description , todo.description , tasksModule.tasks[i].status , todo.status)
-                        if(tasksModule.tasks[i].name !== todo.title || tasksModule.tasks[i].description !== todo.description || tasksModule.tasks[i].status !== todo.status /*|| tasksModule.tasks[i].priority !== todo.priority*/){
-                            console.log("hallo" , tasksModule.tasks , todo)    
-                           // tasksModule.edit(todo.id , todo.title , todo.description , todo.status)
-                             }
-                        break
-                    }  
-                }
-                if (!contains){
-                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status , true)
-                }
-            }
+            console.log("Success:", data);
         })
         .catch((error) => {
             console.error("Error:", error);
         });
-
-    setTimeout(GetTodosOfApi, 10000);
 }
-GetTodosOfApi();
+
+function DeleteToDevApi(task){
+    fetch("http://localhost:8081/todos/" + task.id , {
+        method: "DELETE",
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log("Success:", data);
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
+}
 
 // neues ToDo posten
 
     tasksModule.on("add", (task) => {
-        PostToDevApi(task , "add")
+        PostToDevApi(task)
     })
 
-// Request an die Dev Api, wenn ein Todo verändert wurde
+// Put an die Dev Api, wenn ein Todo verändert wurde
 
     tasksModule.on("edit", (task) =>{
-       // PostToDevApi(task , "edit")
+       PutToDevAPI(task) // put wird in api angezeigt
     })
 
-// Request an die Dev Api, wenn ein Todo verändert wurde
+// Delete an die Dev Api, wenn ein Todo gelöscht wurde
 
     tasksModule.on("remove" , (task)=>{
-        PostToDevApi(task , "remove")
+        // task.status = "deleted"
+        // PutToDevAPI(task)
+       DeleteToDevApi(task) // delete wird in api angezeigt
     })
 
 })
