@@ -17,7 +17,7 @@ const tasksModule = {
         return String(id)
     },
 
-    edit(id, name, description, status/*, priority , responsibility , assignee , completed_at , created_at*/) {
+    edit(id, name, description, status/*, priority , assignee , completed_at */) {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
@@ -26,10 +26,8 @@ const tasksModule = {
                 task.status = status
                 /* 
                 task.priority: priority,
-                task.responsibility: responsibility,
                 task.assignee: assignee,
-                task.completed_at: completed_at,
-                task.created_at: created_at*/
+                task.completed_at: completed_at,*/
                 this.emit("edit", task)
             }
         }
@@ -43,9 +41,9 @@ const tasksModule = {
         }
     },
 
-    add(name, description, status /*, priority , responsibility , assignee , completed_at , created_at*/, external = 'defaultValue') {
+    add(id ,name, description, status /*, priority , assignee */, external = 'defaultValue') {
         const task = {
-            id: this.createElementID(),
+            id: id,
             name: name,
             description: description,
             status: status,
@@ -135,7 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
 
             if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).value, e.target.id) // hier ändern --> draggable.classList[2].slice(12)
+                console.log(draggable , findDescriptionElement(draggable).value)
+                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).value, e.target.id) // hier ändern --> draggable.classList[2].slice(12) ?? schauen
             }
 
         })
@@ -236,11 +235,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return
         }
 
-        tasksModule.add(inputName, inputDesc, inputStatus)
+        tasksModule.add(tasksModule.createElementID() , inputName, inputDesc, inputStatus)
         deleteInput()
         toggleCreatewindow()
     })
-
+// aufräumen, spanelement id wird nicht genutzt und attribute id auch nicht ?!
     tasksModule.on("add", (task) => {
         const divElement = document.createElement("div")
         divElement.setAttribute("id", task.name)
@@ -340,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             element.id = elements.taskName.value
             element.childNodes[0].textContent = elements.taskName.value
-            element.description = elements.taskDescription.value
+            element.description = elements.taskDescription.value // evtl. hier das feld von description?!
 
             if (element.parentNode.id !== task.status) {
                 elements[task.status].append(element)
@@ -361,9 +360,78 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCreatewindow()
     })
 
+
+
+
+
+
+
+   
 //////////////////////////// Anbindung an die API //////////////////////////////////////
 
-// Synchronisation mit der Dev API    
+
+
+function PostToDevApi(task , method){
+    var StatusToSend = ""
+    if(method == "add" && task.external === true){
+        return
+    }
+    if(method == "remove"){
+        // modified at abändern 
+        task.status = "deleted"
+        StatusToSend = "deleted"
+    }
+    if(method == "edit"){
+        // modified at abändern
+    }
+
+    const now = new Date();
+    const current_time = now.toISOString().replace("Z", "+00:00");
+
+    var completed_at = "2000-01-20T01:00:00.000+00:00"
+    if(task.status === "done"){
+        completed_at = current_time
+    }
+    if(task.status === "todo"){
+        StatusToSend = "created"
+    }
+    if (task.status === "inprogress"){
+        StatusToSend = "in_progress"
+    }
+
+    const data = {
+            "completed_at": completed_at,
+            "responsibility": "development",
+            "description": task.description,
+            "created_at": current_time,
+            "reporter": {
+              "firstname": "Bob",
+              "role": "development",
+              "surname": "Baumeister",
+              "id": 8,
+              "email": "bob.bau@example.com"
+            },
+            "id": parseInt(task.id),
+            "assignee": {},
+            "title": task.name,
+            "priority": "low",
+            "status": StatusToSend    
+          
+    };
+    fetch("http://localhost:8081/todos", {
+        method: "POST",
+        body: JSON.stringify(data)
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log("Success:", data);
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
+}
+
+// Synchronisation mit der Dev API  
 
 function GetTodosOfApi() {
     fetch("http://localhost:8081/todos", {
@@ -382,13 +450,18 @@ function GetTodosOfApi() {
                     todo.status = "inprogress"
                 }
                 for (var i = 0; i < tasksModule.tasks.length; i++) {
-                    if (tasksModule.tasks[i].name === todo.title && tasksModule.tasks[i].description === todo.description && tasksModule.tasks[i].status === todo.status) {
+                    if (parseInt(tasksModule.tasks[i].id) === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
                         contains = true
+                        //console.log(tasksModule.tasks[i].name , todo.title , tasksModule.tasks[i].description , todo.description , tasksModule.tasks[i].status , todo.status)
+                        if(tasksModule.tasks[i].name !== todo.title || tasksModule.tasks[i].description !== todo.description || tasksModule.tasks[i].status !== todo.status /*|| tasksModule.tasks[i].priority !== todo.priority*/){
+                            console.log("hallo" , tasksModule.tasks , todo)    
+                           // tasksModule.edit(todo.id , todo.title , todo.description , todo.status)
+                             }
                         break
                     }  
                 }
                 if (!contains){
-                    tasksModule.add(todo.title, todo.description, todo.status , true)
+                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status , true)
                 }
             }
         })
@@ -403,55 +476,19 @@ GetTodosOfApi();
 // neues ToDo posten
 
     tasksModule.on("add", (task) => {
-        var StatusToSend = ""
-        if(task.external === true){
-            return
-        }
+        PostToDevApi(task , "add")
+    })
 
-        const now = new Date();
-        const current_time = now.toISOString().replace("Z", "+00:00");
+// Request an die Dev Api, wenn ein Todo verändert wurde
 
-        var completed_at = "2000-01-20T01:00:00.000+00:00"
-        if(task.status === "done"){
-            completed_at = current_time
-        }
-        if(task.status === "todo"){
-            StatusToSend = "created"
-        }
-        if (task.status === "inprogress"){
-            StatusToSend = "in_progress"
-        }
+    tasksModule.on("edit", (task) =>{
+       // PostToDevApi(task , "edit")
+    })
 
-        const data = {
-                "completed_at": completed_at,
-                "responsibility": "development",
-                "description": task.description,
-                "created_at": current_time,
-                "reporter": {
-                  "firstname": "Bob",
-                  "role": "development",
-                  "surname": "Baumeister",
-                  "id": 8,
-                  "email": "bob.bau@example.com"
-                },
-                "id": parseInt(task.id),
-                "assignee": {},
-                "title": task.name,
-                "priority": "low",
-                "status": StatusToSend    
-              
-        };
-        fetch("http://localhost:8081/todos", {
-            method: "POST",
-            body: JSON.stringify(data)
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                console.log("Success:", data);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-            });
+// Request an die Dev Api, wenn ein Todo verändert wurde
+
+    tasksModule.on("remove" , (task)=>{
+        PostToDevApi(task , "remove")
     })
 
 })
