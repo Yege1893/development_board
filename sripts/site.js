@@ -134,8 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
 
             if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-                console.log(draggable , findDescriptionElement(draggable).value)
-                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).value, e.target.id) // hier ändern --> draggable.classList[2].slice(12) ?? schauen
+                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).innerText, e.target.id) // hier ändern --> draggable.classList[2].slice(12) ?? schauen
             }
 
         })
@@ -182,7 +181,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (element.childNodes[i].className == "description") {
                 element.childNodes[i]
                 description = element.childNodes[i]
-
             }
         }
         return description
@@ -316,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value
                 , elements.taskstatus.value)
             //task.classList.replace(task.classList[2] , "description:" + elements.taskDescription.value)
-            description.value = elements.taskDescription.value
+            description.innerText = elements.taskDescription.value
         }
 
         task.classList.remove("in-edit")
