@@ -114,30 +114,44 @@ document.addEventListener("DOMContentLoaded", () => {
     boxes.push(inprogress)
     boxes.push(todo)
 
+    let draggedElement; // Eine globale Variable zum Zwischenspeichern des gezogenen Elements
+    let draggedElementID;
+
     for (const box of boxes) {
-        box.addEventListener("dragenter", (e) => {
-            e.preventDefault();
-            e.target.classList.add('drag-over');
-        })
-        box.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.target.classList.add('drag-over');
-        })
-        box.addEventListener("dragleave", (e) => {
-            e.target.classList.remove('drag-over');
-
-        })
-        box.addEventListener("drop", (e) => {
-            e.target.classList.remove('drag-over');
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text/plain');
-            const draggable = document.getElementsByClassName(`a-id:${id}`)[0]
-
-            if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-                tasksModule.edit(id, draggable.id, findDescriptionElement(draggable).innerText, e.target.id) // hier ändern --> draggable.classList[2].slice(12) ?? schauen
-            }
-
-        })
+      box.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        e.target.classList.add('drag-over');
+      });
+      
+      box.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.target.classList.add('drag-over');
+      });
+      
+      box.addEventListener("dragleave", (e) => {
+        e.target.classList.remove('drag-over');
+      });
+      
+      box.addEventListener("dragstart", (e) => {
+        // Hier speichern wir das gezogene Element in der globalen Variable `draggedElement`
+        draggedElement = e.target;
+        draggedElementID = draggedElement.classList[0].slice(5)
+      });
+      
+      box.addEventListener("drop", (e) => {
+        e.target.classList.remove('drag-over');
+        e.preventDefault();
+        //const id = e.dataTransfer.getData('text/plain');
+        //const id = draggedElement.classList()
+        const draggable = document.getElementsByClassName(`a-id:${draggedElementID}`)[0];
+        console.log(draggable, "draggable", draggedElementID, "id", tasksModule.tasks);
+        
+        // Hier können Sie das `draggedElement`-Objekt verwenden, um die entsprechenden Aktionen auszuführen
+        if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
+          tasksModule.edit(draggedElementID, draggedElement.id, findDescriptionElement(draggable).innerText, e.target.id);
+          // Hier verwenden wir das gespeicherte `draggedElement`-Objekt, um die entsprechenden Aktionen auszuführen
+        }
+      });
     }
 
     elements.createBlock.classList.add("not-displayed")
@@ -176,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function findDescriptionElement(element) {
         var description = null
-
+        console.log(element , "element 180")
         for (var i = 0; i < element.childNodes.length; i++) {
             if (element.childNodes[i].className == "description") {
                 element.childNodes[i]
@@ -291,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
 
         element.addEventListener("dragstart", (e) => {
-            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5, 6))
+            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5))
             setTimeout(() => {
                 e.target.classList.add('hide')
             }, 0)
@@ -307,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.editButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const id = task.classList[0].slice(5, 6)
+        const id = task.classList[0].slice(5)
         var description = findDescriptionElement(task)
 
         if (elements.taskName.value) {
@@ -349,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.delteButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const taskId = task.classList[0].slice(5, 6)
+        const taskId = task.classList[0].slice(5)
         tasksModule.remove(taskId)
     })
 
@@ -387,7 +401,7 @@ function GetTodosOfApi() {
                     todo.status = "inprogress"
                 }
                 for (var i = 0; i < tasksModule.tasks.length; i++) {
-                    if (parseInt(tasksModule.tasks[i].id) === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
+                    if (tasksModule.tasks[i].id === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
                         contains = true
                         //console.log(tasksModule.tasks[i].name , todo.title , tasksModule.tasks[i].description , todo.description , tasksModule.tasks[i].status , todo.status)
                         if(tasksModule.tasks[i].name !== todo.title || tasksModule.tasks[i].description !== todo.description || tasksModule.tasks[i].status !== todo.status /*|| tasksModule.tasks[i].priority !== todo.priority*/){
@@ -442,7 +456,6 @@ function PostToDevApi(task){
               "id": 8,
               "email": "bob.bau@example.com"
             },
-            "id": parseInt(task.id),
             "assignee": {},
             "title": task.name,
             "priority": "low",
@@ -495,7 +508,6 @@ function PutToDevAPI(task){
               "id": 8,
               "email": "bob.bau@example.com"
             },
-            "id": parseInt(task.id),
             "assignee": {},
             "title": task.name,
             "priority": "low",
