@@ -43,7 +43,7 @@ const tasksModule = {
         }
     },
 
-    add(id = 'defaultValue' ,name, description, status /*, priority , assignee */, modiefiedAt) {
+    add(id = 'defaultValue' , name , description, status /*, priority , assignee */, modiefiedAt) {
         const task = {
             id: id,
             name: name,
@@ -142,9 +142,10 @@ document.addEventListener("DOMContentLoaded", () => {
         e.target.classList.remove('drag-over');
         e.preventDefault();
         const draggable = document.getElementById(draggedElementID)
+        console.log(draggedElement.title , "draggedElement.title" , draggedElement)
         
         if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-          tasksModule.edit(draggedElementID, draggedElement.title, findDescriptionElement(draggable).innerText, e.target.id , creatCurrenTime());
+          tasksModule.edit(draggedElementID, findTitleElement(draggedElement).innerText, findDescriptionElement(draggable).innerText, e.target.id , creatCurrenTime());
         }
       });
     }
@@ -192,6 +193,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         return description
+    }
+
+    function findTitleElement(element) {
+        var title = null
+        for (var i = 0; i < element.childNodes.length; i++) {
+            if (element.childNodes[i].className == "title") {
+                element.childNodes[i]
+                title = element.childNodes[i]
+            }
+        }
+        return title
     }
     
     function creatCurrenTime(){
@@ -278,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         divElement.setAttribute("draggable", "true")
         divElement.classList.add("task")
         const spanElementTitle = document.createElement("span")
+        spanElementTitle.classList.add("title")
         spanElementTitle.setAttribute("title", task.name)
         spanElementTitle.innerHTML = task.name
 
@@ -340,6 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
         var description = findDescriptionElement(task)
 
         if (elements.taskName.value) {
+            console.log(elements.taskName.value , "elements.taskName.value")
             tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , creatCurrenTime())
             description.innerText = elements.taskDescription.value
         }
@@ -417,6 +431,7 @@ function GetTodosOfApi() {
                     if (tasksModule.tasks[i].id === todo.id) {
                         contains = true
                         if(tasksModule.tasks[i].modiefiedAt < todo.modiefiedAt){
+                            console.log(tasksModule.tasks[i].modiefiedAt < todo.modiefiedAt)
                             console.log("hallo" , tasksModule.tasks , todo)    
                             tasksModule.edit(todo.id , todo.title , todo.description , todo.status , todo.modiefiedAt , true)
                              }
