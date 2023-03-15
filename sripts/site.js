@@ -3,20 +3,22 @@
 
 const tasksModule = {
     tasks: [],
-
-    assignee: {
-        email: null,
-        firstname: null,
-        surname: null,
-
+    add(id = 'defaultValue' , name , description, status /*, priority , assignee */, modiefiedAt) {
+        const task = {
+            id: id,
+            name: name,
+            description: description,
+            status: status,
+            modiefiedAt: modiefiedAt
+            /* priority: priority,
+             responsibility: responsibility,
+             assignee: assignee,
+             completed_at: completed_at,
+             created_at: created_at*/
+        }
+        this.tasks.push(task)
+        this.emit("add", task)
     },
-
-    createElementID() {
-        let id = this.tasks.length
-        id += 1
-        return String(id)
-    },
-
     edit(id, name, description, status , modiefiedAt/*, priority , assignee , completed_at */, external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
@@ -33,31 +35,6 @@ const tasksModule = {
                 this.emit("edit", task)
             }
         }
-    },
-
-    getElementIdByFormular(name, description, status) {
-        for (const element of this.tasks) {
-            if (element.name === name && element.description === description && element.status === status) {
-                return element.id
-            }
-        }
-    },
-
-    add(id = 'defaultValue' , name , description, status /*, priority , assignee */, modiefiedAt) {
-        const task = {
-            id: id,
-            name: name,
-            description: description,
-            status: status,
-            modiefiedAt: modiefiedAt
-            /* priority: priority,
-             responsibility: responsibility,
-             assignee: assignee,
-             completed_at: completed_at,
-             created_at: created_at*/
-        }
-        this.tasks.push(task)
-        this.emit("add", task)
     },
     remove(id) {
         for (const index in this.tasks) {
@@ -81,15 +58,15 @@ const tasksModule = {
             this.events[eventName] = []
         }
         this.events[eventName].push(cb)
-    }
+    },
+    getElementIdByFormular(name, description, status) {
+        for (const element of this.tasks) {
+            if (element.name === name && element.description === description && element.status === status) {
+                return element.id
+            }
+        }
+    },
 }
-
-
-
-
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
 
     const elements = {
@@ -102,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
         taskDescription: document.getElementById("task-description"),
         taskstatus: document.getElementById("task-status"),
         cancelButton: document.getElementById("cancel-button"),
+        historyButton: document.getElementById("history-button"),
         todo: document.getElementById("todo"),
         editButton: document.getElementById("edit-button"),
         delteButton: document.getElementById("delete-button"),
@@ -142,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
         e.target.classList.remove('drag-over');
         e.preventDefault();
         const draggable = document.getElementById(draggedElementID)
-        console.log(draggedElement.title , "draggedElement.title" , draggedElement)
         
         if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
           tasksModule.edit(draggedElementID, findTitleElement(draggedElement).innerText, findDescriptionElement(draggable).innerText, e.target.id , creatCurrenTime());
@@ -284,6 +261,14 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCreatewindow()
     })
 
+    elements.historyButton.addEventListener("click" , async (e) =>{
+        const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
+        const message = getHistoryOfTodo(currentId).toString()
+
+        alert(message)
+
+    })
+
     tasksModule.on("add", (task) => {
         const divElement = document.createElement("div")
         divElement.setAttribute("id",task.id)
@@ -324,6 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
+            elements.historyButton.style.display = "block"
             elements.delteButton.style.display = "block"
             elements.actiondescription.innerText = "Edit Task"
         })
@@ -400,13 +386,6 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCreatewindow()
     })
 
-
-
-
-
-
-
-   
 //////////////////////////// Anbindung an die API //////////////////////////////////////
 
 // Synchronisation mit der Dev API  
@@ -451,7 +430,6 @@ function GetTodosOfApi() {
 }
 GetTodosOfApi();
 
-// initialisierung von data machen!
 async function PostToDevApi(task) {
     var StatusToSend = "";
     var ToDoID = null;
@@ -508,7 +486,7 @@ async function PostToDevApi(task) {
 
 function PutToDevAPI(task){
     var StatusToSend = ""
-    if(task.external === true){ // soll nur beim update von der GetTodosApi nicht schicken
+    if(task.external === true){ // soll beim update von der GetTodosApi nicht schicken
         task.external = false
         return
     }
@@ -558,8 +536,45 @@ function PutToDevAPI(task){
 }
 
 function DeleteToDevApi(task){
+    var StatusToSend = "";
+    var ToDoID = null;
+    if (task.external === true) {
+        return;
+    }
+
+    const current_time = creatCurrenTime()
+
+    var completed_at = "2000-01-20T01:00:00.000+00:00";
+    if (task.status === "done") {
+        completed_at = current_time;
+    }
+    if (task.status === "todo") {
+        StatusToSend = "created";
+    }
+    if (task.status === "inprogress") {
+        StatusToSend = "in_progress";
+    }
+
+    const data = {
+        completed_at: completed_at,
+        responsibility: "development",
+        description: task.description,
+        created_at: current_time,
+        reporter: {
+            firstname: "Bob",
+            role: "development",
+            surname: "Baumeister",
+            id: 8,
+            email: "bob.bau@example.com",
+        },
+        assignee: {},
+        title: task.name,
+        priority: "low",
+        status: StatusToSend,
+    };
     fetch("http://localhost:8081/todos/" + task.id , {
         method: "DELETE",
+        body: JSON.stringify(data)
     })
         .then((response) => response.text())
         .then((data) => {
@@ -570,14 +585,24 @@ function DeleteToDevApi(task){
         });
 }
 
-
-// Put an die Dev Api, wenn ein Todo verändert wurde
-
+function getHistoryOfTodo(id){
+    fetch("http://localhost:8081/history/" + id, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            return data
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
+}
     tasksModule.on("edit", (task) =>{
        PutToDevAPI(task) // put wird in api angezeigt
     })
-
-// Delete an die Dev Api, wenn ein Todo gelöscht wurde
 
     tasksModule.on("remove" , (task)=>{
        DeleteToDevApi(task)
