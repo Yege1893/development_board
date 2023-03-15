@@ -17,13 +17,14 @@ const tasksModule = {
         return String(id)
     },
 
-    edit(id, name, description, status/*, priority , assignee , completed_at */, external = 'defaultValue') {
+    edit(id, name, description, status , modiefiedAt/*, priority , assignee , completed_at */, external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
                 task.name = name
                 task.description = description
                 task.status = status
+                task.modiefiedAt = modiefiedAt
                 /* 
                 task.priority: priority,
                 task.assignee: assignee,
@@ -34,7 +35,7 @@ const tasksModule = {
         }
     },
 
-    getElementID(name, description, status) {
+    getElementIdByFormular(name, description, status) {
         for (const element of this.tasks) {
             if (element.name === name && element.description === description && element.status === status) {
                 return element.id
@@ -42,18 +43,18 @@ const tasksModule = {
         }
     },
 
-    add(id ,name, description, status /*, priority , assignee */, external = 'defaultValue') {
+    add(id = 'defaultValue' ,name, description, status /*, priority , assignee */, modiefiedAt) {
         const task = {
             id: id,
             name: name,
             description: description,
             status: status,
+            modiefiedAt: modiefiedAt
             /* priority: priority,
              responsibility: responsibility,
              assignee: assignee,
              completed_at: completed_at,
              created_at: created_at*/
-             external: external,
         }
         this.tasks.push(task)
         this.emit("add", task)
@@ -114,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     boxes.push(inprogress)
     boxes.push(todo)
 
-    let draggedElement; // Eine globale Variable zum Zwischenspeichern des gezogenen Elements
+    let draggedElement;
     let draggedElementID;
 
     for (const box of boxes) {
@@ -133,23 +134,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       
       box.addEventListener("dragstart", (e) => {
-        // Hier speichern wir das gezogene Element in der globalen Variable `draggedElement`
         draggedElement = e.target;
-        draggedElementID = draggedElement.classList[0].slice(5)
+        draggedElementID = draggedElement.id
       });
       
       box.addEventListener("drop", (e) => {
         e.target.classList.remove('drag-over');
         e.preventDefault();
-        //const id = e.dataTransfer.getData('text/plain');
-        //const id = draggedElement.classList()
-        const draggable = document.getElementsByClassName(`a-id:${draggedElementID}`)[0];
-        console.log(draggable, "draggable", draggedElementID, "id", tasksModule.tasks);
+        const draggable = document.getElementById(draggedElementID)
         
-        // Hier können Sie das `draggedElement`-Objekt verwenden, um die entsprechenden Aktionen auszuführen
         if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-          tasksModule.edit(draggedElementID, draggedElement.id, findDescriptionElement(draggable).innerText, e.target.id);
-          // Hier verwenden wir das gespeicherte `draggedElement`-Objekt, um die entsprechenden Aktionen auszuführen
+          tasksModule.edit(draggedElementID, draggedElement.title, findDescriptionElement(draggable).innerText, e.target.id , creatCurrenTime());
         }
       });
     }
@@ -190,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function findDescriptionElement(element) {
         var description = null
-        console.log(element , "element 180")
         for (var i = 0; i < element.childNodes.length; i++) {
             if (element.childNodes[i].className == "description") {
                 element.childNodes[i]
@@ -198,6 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         return description
+    }
+    
+    function creatCurrenTime(){
+        let now = new Date();
+        now.setHours(now.getHours() + 1);
+        const current_time = now.toISOString().replace("Z", "+00:00");
+        return current_time;
     }
 
     elements.createButton.addEventListener("click", (e) => {
@@ -208,10 +209,11 @@ document.addEventListener("DOMContentLoaded", () => {
         deleteInput()
         toggleCreatewindow()
     })
+    
 
     elements.cancelButton.addEventListener("click", (e) => {
-        const currentId = tasksModule.getElementID(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
-        const currentElement = document.getElementsByClassName(`a-id:${currentId}`)[0]
+        const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
+        const currentElement = document.getElementById(currentId)
 
         if (!currentElement) {
             deleteInput()
@@ -230,10 +232,11 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleCreatewindow()
     })
 
-    elements.savebutton.addEventListener("click", (e) => {
+    elements.savebutton.addEventListener("click", async (e) => {
         const inputName = elements.taskName.value
-        const inputDesc = elements.taskDescription.value //hier in span reinschreiben?!
+        const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
+        var ToDoID = ""
 
         for (const task of tasksModule.tasks) {
             if (task.name === inputName && task.description === inputDesc) {
@@ -245,27 +248,40 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!inputName) {
+            alert("Bitte eine ToDo-Beschreibung hinterlegen")
             return
         }
 
-        tasksModule.add(tasksModule.createElementID() , inputName, inputDesc, inputStatus)
+        var inputTask = {
+            name: inputName,
+            description: inputDesc,
+            status: inputStatus,
+            /* priority: priority,
+             responsibility: responsibility,
+             assignee: assignee,
+             completed_at: completed_at,
+             created_at: created_at
+             external: external,*/
+        }
+        const inputString = await PostToDevApi(inputTask)
+        const startIndex = inputString.indexOf('"') + 1;
+        const endIndex = inputString.indexOf('"', startIndex);
+        ToDoID = inputString.slice(startIndex, endIndex);
+        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus)
         deleteInput()
         toggleCreatewindow()
     })
-// aufräumen, spanelement id wird nicht genutzt und attribute id auch nicht ?!
+
     tasksModule.on("add", (task) => {
         const divElement = document.createElement("div")
-        divElement.setAttribute("id", task.name)
+        divElement.setAttribute("id",task.id)
         divElement.setAttribute("draggable", "true")
-        //divElement.setAttribute("data" , task.description)
-        divElement.classList.add("a-id" + ":" + tasksModule.getElementID(task.name, task.description, task.status))
         divElement.classList.add("task")
-        //divElement.classList.add("description:" + task.description) // hier paragraph unterhalb dem divelement einbauen, evtl. display none
-        const spanElementId = document.createElement("span")
-        spanElementId.setAttribute("id", task.name)
-        spanElementId.innerHTML = task.name
+        const spanElementTitle = document.createElement("span")
+        spanElementTitle.setAttribute("title", task.name)
+        spanElementTitle.innerHTML = task.name
 
-        divElement.appendChild(spanElementId)
+        divElement.appendChild(spanElementTitle)
 
         const spanElementDesc = document.createElement("span")
         spanElementDesc.setAttribute("description", task.name)
@@ -285,8 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     tasksModule.on("add", (task) => {
-        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
-        console.log(element)
+        const element = document.getElementById(task.id)
         element.addEventListener("click", (e) => {
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
@@ -302,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     })
     tasksModule.on("add", (task) => {
-        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
+        const element = document.getElementById(task.id)
 
         element.addEventListener("dragstart", (e) => {
             e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5))
@@ -321,13 +336,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.editButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const id = task.classList[0].slice(5)
+        const id = task.id
         var description = findDescriptionElement(task)
 
         if (elements.taskName.value) {
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value
-                , elements.taskstatus.value)
-            //task.classList.replace(task.classList[2] , "description:" + elements.taskDescription.value)
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , creatCurrenTime())
             description.innerText = elements.taskDescription.value
         }
 
@@ -344,15 +357,15 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     tasksModule.on("edit", (task) => {
-        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
+        const element = document.getElementById(task.id)
 
         if (element.classList.contains("dragged")) {
             elements[task.status].append(element)
             element.classList.remove("dragged")
         } else {
-            element.id = elements.taskName.value
+            element.title = elements.taskName.value
             element.childNodes[0].textContent = elements.taskName.value
-            element.description = elements.taskDescription.value // evtl. hier das feld von description?!
+            element.description = elements.taskDescription.value
 
             if (element.parentNode.id !== task.status) {
                 elements[task.status].append(element)
@@ -363,12 +376,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.delteButton.addEventListener("click", (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
-        const taskId = task.classList[0].slice(5)
+        const taskId = task.id
         tasksModule.remove(taskId)
     })
 
     tasksModule.on("remove", (task) => {
-        const element = document.getElementsByClassName(`a-id:${task.id}`)[0]
+       const element = document.getElementById(task.id)
         element.remove()
         toggleCreatewindow()
     })
@@ -401,18 +414,17 @@ function GetTodosOfApi() {
                     todo.status = "inprogress"
                 }
                 for (var i = 0; i < tasksModule.tasks.length; i++) {
-                    if (tasksModule.tasks[i].id === todo.id) { // kann noch nicht umgesetzt werden, da im backend das update noch nicht umgesetzt wurde
+                    if (tasksModule.tasks[i].id === todo.id) {
                         contains = true
-                        //console.log(tasksModule.tasks[i].name , todo.title , tasksModule.tasks[i].description , todo.description , tasksModule.tasks[i].status , todo.status)
-                        if(tasksModule.tasks[i].name !== todo.title || tasksModule.tasks[i].description !== todo.description || tasksModule.tasks[i].status !== todo.status /*|| tasksModule.tasks[i].priority !== todo.priority*/){
+                        if(tasksModule.tasks[i].modiefiedAt < todo.modiefiedAt){
                             console.log("hallo" , tasksModule.tasks , todo)    
-                           // tasksModule.edit(todo.id , todo.title , todo.description , todo.status , -1)
+                            tasksModule.edit(todo.id , todo.title , todo.description , todo.status , todo.modiefiedAt , true)
                              }
                         break
                     }  
                 }
                 if (!contains){
-                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status , true)
+                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status)
                 }
             }
         })
@@ -425,65 +437,68 @@ function GetTodosOfApi() {
 GetTodosOfApi();
 
 // initialisierung von data machen!
-function PostToDevApi(task){
-    var StatusToSend = ""
-    if(task.external === true){
-        return
+async function PostToDevApi(task) {
+    var StatusToSend = "";
+    var ToDoID = null;
+    if (task.external === true) {
+        return;
     }
-    const now = new Date();
-    const current_time = now.toISOString().replace("Z", "+00:00");
 
-    var completed_at = "2000-01-20T01:00:00.000+00:00"
-    if(task.status === "done"){
-        completed_at = current_time
+    const current_time = creatCurrenTime()
+
+    var completed_at = "2000-01-20T01:00:00.000+00:00";
+    if (task.status === "done") {
+        completed_at = current_time;
     }
-    if(task.status === "todo"){
-        StatusToSend = "created"
+    if (task.status === "todo") {
+        StatusToSend = "created";
     }
-    if (task.status === "inprogress"){
-        StatusToSend = "in_progress"
+    if (task.status === "inprogress") {
+        StatusToSend = "in_progress";
     }
 
     const data = {
-            "completed_at": completed_at,
-            "responsibility": "development",
-            "description": task.description,
-            "created_at": current_time,
-            "reporter": {
-              "firstname": "Bob",
-              "role": "development",
-              "surname": "Baumeister",
-              "id": 8,
-              "email": "bob.bau@example.com"
-            },
-            "assignee": {},
-            "title": task.name,
-            "priority": "low",
-            "status": StatusToSend    
-          
+        completed_at: completed_at,
+        responsibility: "development",
+        description: task.description,
+        created_at: current_time,
+        reporter: {
+            firstname: "Bob",
+            role: "development",
+            surname: "Baumeister",
+            id: 8,
+            email: "bob.bau@example.com",
+        },
+        assignee: {},
+        title: task.name,
+        priority: "low",
+        status: StatusToSend,
     };
-    fetch("http://localhost:8081/todos", {
-        method: "POST",
-        body: JSON.stringify(data)
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log("Success:", data);
-        })
-        .catch((error) => {
-            console.error("Error:", error);
+
+    try {
+        const response = await fetch("http://localhost:8081/todos", {
+            method: "POST",
+            body: JSON.stringify(data),
         });
+        const responseData = await response.text();
+        ToDoID = responseData;
+        console.log("Success:", responseData);
+    } catch (error) {
+        console.error("Error:", error);
+    }
+
+    return ToDoID;
 }
+
 
 function PutToDevAPI(task){
     var StatusToSend = ""
-    if(task.external === -1){ // soll nur beim update von der GetTodosApi nicht schicken
-        task.external += 1
+    if(task.external === true){ // soll nur beim update von der GetTodosApi nicht schicken
+        task.external = false
         return
     }
 
-    const now = new Date();
-    const current_time = now.toISOString().replace("Z", "+00:00");
+    const current_time = creatCurrenTime()
 
     var completed_at = "2000-01-20T01:00:00.000+00:00"
     if(task.status === "done"){
@@ -518,9 +533,9 @@ function PutToDevAPI(task){
         method: "PUT",
         body: JSON.stringify(data)
     })
-        .then((response) => response.json())
+        .then((response) => response.text())
         .then((data) => {
-            console.log("Success:", data);
+            console.log("Success", data);
         })
         .catch((error) => {
             console.error("Error:", error);
@@ -531,20 +546,15 @@ function DeleteToDevApi(task){
     fetch("http://localhost:8081/todos/" + task.id , {
         method: "DELETE",
     })
-        .then((response) => response.json())
+        .then((response) => response.text())
         .then((data) => {
-            console.log("Success:", data);
+            console.log("Success", data);
         })
         .catch((error) => {
             console.error("Error:", error);
         });
 }
 
-// neues ToDo posten
-
-    tasksModule.on("add", (task) => {
-        PostToDevApi(task)
-    })
 
 // Put an die Dev Api, wenn ein Todo verändert wurde
 
@@ -555,9 +565,7 @@ function DeleteToDevApi(task){
 // Delete an die Dev Api, wenn ein Todo gelöscht wurde
 
     tasksModule.on("remove" , (task)=>{
-        // task.status = "deleted"
-        // PutToDevAPI(task)
-       DeleteToDevApi(task) // delete wird in api angezeigt
+       DeleteToDevApi(task)
     })
 
 })
