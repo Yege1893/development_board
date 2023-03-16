@@ -3,13 +3,13 @@
 
 const tasksModule = {
     tasks: [],
-    add(id = 'defaultValue' , name , description, status /*, priority , assignee */, modiefiedAt) {
+    add(id = 'defaultValue', name, description, status /*, priority , assignee */, modifiedAt) {
         const task = {
             id: id,
             name: name,
             description: description,
             status: status,
-            modiefiedAt: modiefiedAt
+            modifiedAt: modifiedAt
             /* priority: priority,
              responsibility: responsibility,
              assignee: assignee,
@@ -19,20 +19,20 @@ const tasksModule = {
         this.tasks.push(task)
         this.emit("add", task)
     },
-    edit(id, name, description, status , modiefiedAt/*, priority , assignee , completed_at */, external = 'defaultValue') {
+    edit(id, name, description, status, modifiedAt/*, priority , assignee , completed_at */, external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
                 task.name = name
                 task.description = description
                 task.status = status
-                task.modiefiedAt = modiefiedAt
+                task.modifiedAt = modifiedAt
                 /* 
                 task.priority: priority,
                 task.assignee: assignee,
                 task.completed_at: completed_at,*/
                 task.external = external,
-                this.emit("edit", task)
+                    this.emit("edit", task)
             }
         }
     },
@@ -97,34 +97,38 @@ document.addEventListener("DOMContentLoaded", () => {
     let draggedElementID;
 
     for (const box of boxes) {
-      box.addEventListener("dragenter", (e) => {
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-      });
-      
-      box.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        e.target.classList.add('drag-over');
-      });
-      
-      box.addEventListener("dragleave", (e) => {
-        e.target.classList.remove('drag-over');
-      });
-      
-      box.addEventListener("dragstart", (e) => {
-        draggedElement = e.target;
-        draggedElementID = draggedElement.id
-      });
-      
-      box.addEventListener("drop", (e) => {
-        e.target.classList.remove('drag-over');
-        e.preventDefault();
-        const draggable = document.getElementById(draggedElementID)
-        
-        if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-          tasksModule.edit(draggedElementID, findTitleElement(draggedElement).innerText, findDescriptionElement(draggable).innerText, e.target.id , creatCurrenTime());
-        }
-      });
+        box.addEventListener("dragenter", (e) => {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        });
+
+        box.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.target.classList.add('drag-over');
+        });
+
+        box.addEventListener("dragleave", (e) => {
+            e.target.classList.remove('drag-over');
+        });
+
+        box.addEventListener("dragstart", (e) => {
+            draggedElement = e.target;
+            draggedElementID = draggedElement.id
+        });
+
+        box.addEventListener("drop", async (e) => {
+            e.target.classList.remove('drag-over');
+            e.preventDefault();
+            const draggable = document.getElementById(draggedElementID)
+
+            if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
+                var modifiTime = await PutToDevAPI(draggedElementID, findTitleElement(draggedElement).innerHTML, findDescriptionElement(draggable).innerText, e.target.id)
+                const startIndex = modifiTime.indexOf('"') + 1;
+                const endIndex = modifiTime.indexOf('"', startIndex);
+                modifiTime = modifiTime.slice(startIndex, endIndex);
+                tasksModule.edit(draggedElementID, findTitleElement(draggedElement).innerHTML, findDescriptionElement(draggable).innerText, e.target.id, modifiTime);
+            }
+        });
     }
 
     elements.createBlock.classList.add("not-displayed")
@@ -182,10 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return title
     }
-    
-    function creatCurrenTime(){
+
+    function creatCurrenTime() {
         let now = new Date();
-        now.setHours(now.getHours() + 1);
         const current_time = now.toISOString().replace("Z", "+00:00");
         return current_time;
     }
@@ -198,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
         deleteInput()
         toggleCreatewindow()
     })
-    
+
 
     elements.cancelButton.addEventListener("click", (e) => {
         const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
@@ -256,12 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const startIndex = inputString.indexOf('"') + 1;
         const endIndex = inputString.indexOf('"', startIndex);
         ToDoID = inputString.slice(startIndex, endIndex);
-        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus)
+        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus, creatCurrenTime()) // bei modifiedAt muss ein initialies datum rein, wie bei api, beim späteren feld created at muss dass Currentime rein
         deleteInput()
         toggleCreatewindow()
     })
 
-    elements.historyButton.addEventListener("click" , async (e) =>{
+    elements.historyButton.addEventListener("click", async (e) => {
         const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
         const message = getHistoryOfTodo(currentId).toString()
 
@@ -271,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tasksModule.on("add", (task) => {
         const divElement = document.createElement("div")
-        divElement.setAttribute("id",task.id)
+        divElement.setAttribute("id", task.id)
         divElement.setAttribute("draggable", "true")
         divElement.classList.add("task")
         const spanElementTitle = document.createElement("span")
@@ -333,14 +336,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     })
 
-    elements.editButton.addEventListener("click", (e) => {
+    elements.editButton.addEventListener("click", async (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
         const id = task.id
         var description = findDescriptionElement(task)
 
         if (elements.taskName.value) {
-            console.log(elements.taskName.value , "elements.taskName.value")
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , creatCurrenTime())
+            var modifiTime = await PutToDevAPI(id, task.title, task.description, task.status)
+            const startIndex = modifiTime.indexOf('"') + 1;
+            const endIndex = modifiTime.indexOf('"', startIndex);
+            modifiTime = modifiTime.slice(startIndex, endIndex);
+
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime)
             description.innerText = elements.taskDescription.value
         }
 
@@ -381,231 +388,281 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     tasksModule.on("remove", (task) => {
-       const element = document.getElementById(task.id)
+        const element = document.getElementById(task.id)
         element.remove()
         toggleCreatewindow()
     })
 
-//////////////////////////// Anbindung an die API //////////////////////////////////////
+    //////////////////////////// Anbindung an die API //////////////////////////////////////
 
-// Synchronisation mit der Dev API  
+    // Synchronisation mit der Dev API  
 
-function GetTodosOfApi() {
-    fetch("http://localhost:8081/todos", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            for (const todo of data) {
-                var contains = false
-                if(todo.status === "created" || todo.status === "on_hold"){
-                    todo.status = "todo"
-                }if (todo.status === "in_progress"){
-                    todo.status = "inprogress"
-                }
-                for (var i = 0; i < tasksModule.tasks.length; i++) {
-                    if (tasksModule.tasks[i].id === todo.id) {
-                        contains = true
-                        if(tasksModule.tasks[i].modiefiedAt < todo.modiefiedAt){
-                            console.log(tasksModule.tasks[i].modiefiedAt < todo.modiefiedAt)
-                            console.log("hallo" , tasksModule.tasks , todo)    
-                            tasksModule.edit(todo.id , todo.title , todo.description , todo.status , todo.modiefiedAt , true)
-                             }
-                        break
-                    }  
-                }
-                if (!contains){
-                    tasksModule.add(todo.id.toString() , todo.title, todo.description, todo.status)
-                }
-            }
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-        });
-
-    setTimeout(GetTodosOfApi, 10000);
-}
-GetTodosOfApi();
-
-async function PostToDevApi(task) {
-    var StatusToSend = "";
-    var ToDoID = null;
-    if (task.external === true) {
-        return;
-    }
-
-    const current_time = creatCurrenTime()
-
-    var completed_at = "2000-01-20T01:00:00.000+00:00";
-    if (task.status === "done") {
-        completed_at = current_time;
-    }
-    if (task.status === "todo") {
-        StatusToSend = "created";
-    }
-    if (task.status === "inprogress") {
-        StatusToSend = "in_progress";
-    }
-
-    const data = {
-        completed_at: completed_at,
-        responsibility: "development",
-        description: task.description,
-        created_at: current_time,
-        reporter: {
-            firstname: "Bob",
-            role: "development",
-            surname: "Baumeister",
-            id: 8,
-            email: "bob.bau@example.com",
-        },
-        assignee: {},
-        title: task.name,
-        priority: "low",
-        status: StatusToSend,
-    };
-
-    try {
-        const response = await fetch("http://localhost:8081/todos", {
-            method: "POST",
-            body: JSON.stringify(data),
-        });
-        const responseData = await response.text();
-        ToDoID = responseData;
-        console.log("Success:", responseData);
-    } catch (error) {
-        console.error("Error:", error);
-    }
-
-    return ToDoID;
-}
-
-
-function PutToDevAPI(task){
-    var StatusToSend = ""
-    if(task.external === true){ // soll beim update von der GetTodosApi nicht schicken
-        task.external = false
-        return
-    }
-
-    const current_time = creatCurrenTime()
-
-    var completed_at = "2000-01-20T01:00:00.000+00:00"
-    if(task.status === "done"){
-        completed_at = current_time
-    }
-    if(task.status === "todo"){
-        StatusToSend = "created"
-    }
-    if (task.status === "inprogress"){
-        StatusToSend = "in_progress"
-    }
-
-    const data = {
-            "completed_at": completed_at,
-            "responsibility": "development",
-            "description": task.description,
-            "created_at": current_time,
-            "reporter": {
-              "firstname": "Bob",
-              "role": "development",
-              "surname": "Baumeister",
-              "id": 8,
-              "email": "bob.bau@example.com"
+    function GetTodosOfApi() {
+        fetch("http://localhost:8081/todos", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
             },
-            "assignee": {},
-            "title": task.name,
-            "priority": "low",
-            "status": StatusToSend    
-          
-    };
-    fetch("http://localhost:8081/todos/" + task.id , {
-        method: "PUT",
-        body: JSON.stringify(data)
-    })
-        .then((response) => response.text())
-        .then((data) => {
-            console.log("Success", data);
         })
-        .catch((error) => {
+            .then((response) => response.json())
+            .then((data) => {
+                for (const todo of data) {
+                    var contains = false
+                    if (todo.status === "created" || todo.status === "on_hold") {
+                        todo.status = "todo"
+                    } if (todo.status === "in_progress") {
+                        todo.status = "inprogress"
+                    }
+                    for (var i = 0; i < tasksModule.tasks.length; i++) {
+                        if (tasksModule.tasks[i].id === todo.id) {
+                            contains = true
+                            const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
+                            const DateExternTodo = new Date(todo.modified_at)
+                            if (DateInterTask < DateExternTodo) {
+                                console.log(todo.id, todo.title, todo.description, todo.status, todo.modified_at)
+                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, true)
+                            }
+                            break
+                        }
+                    }
+                    if (!contains) {
+                        console.log("hallo")
+                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.modified_at)
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+
+        setTimeout(GetTodosOfApi, 10000);
+    }
+    GetTodosOfApi();
+
+    async function PostToDevApi(task) {
+        var StatusToSend = "";
+        var ToDoID = null;
+        if (task.external === true) {
+            return;
+        }
+
+        const current_time = creatCurrenTime()
+
+        var completed_at = "2000-01-20T01:00:00.000+00:00";
+        if (task.status === "done") {
+            completed_at = current_time;
+        }
+        if (task.status === "todo") {
+            StatusToSend = "created";
+        }
+        if (task.status === "inprogress") {
+            StatusToSend = "in_progress";
+        }
+
+        const data = {
+            completed_at: completed_at,
+            responsibility: "development",
+            description: task.description,
+            created_at: current_time,
+            reporter: {
+                firstname: "Bob",
+                role: "development",
+                surname: "Baumeister",
+                id: 8,
+                email: "bob.bau@example.com",
+            },
+            assignee: {},
+            title: task.title,
+            priority: "low",
+            status: StatusToSend,
+        };
+
+        try {
+            const response = await fetch("http://localhost:8081/todos", {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+            const responseData = await response.text();
+            ToDoID = responseData;
+            console.log("Success:", responseData);
+        } catch (error) {
             console.error("Error:", error);
-        });
-}
+        }
 
-function DeleteToDevApi(task){
-    var StatusToSend = "";
-    var ToDoID = null;
-    if (task.external === true) {
-        return;
+        return ToDoID;
     }
 
-    const current_time = creatCurrenTime()
+    async function PutToDevAPI(id, title, description, status) {
+        var StatusToSend = "";
+        var ToDoID = null;
+        /*if (task.external === true) {
+            return;
+        }*/
 
-    var completed_at = "2000-01-20T01:00:00.000+00:00";
-    if (task.status === "done") {
-        completed_at = current_time;
-    }
-    if (task.status === "todo") {
-        StatusToSend = "created";
-    }
-    if (task.status === "inprogress") {
-        StatusToSend = "in_progress";
+        const current_time = creatCurrenTime()
+
+        var completed_at = "2000-01-20T01:00:00.000+00:00";
+        if (status === "done") {
+            completed_at = current_time;
+        }
+        if (status === "todo") {
+            StatusToSend = "created";
+        }
+        if (status === "inprogress") {
+            StatusToSend = "in_progress";
+        }
+
+        const data = {
+            completed_at: completed_at,
+            responsibility: "development",
+            description: description,
+            created_at: current_time,
+            reporter: {
+                firstname: "Bob",
+                role: "development",
+                surname: "Baumeister",
+                id: 8,
+                email: "bob.bau@example.com",
+            },
+            assignee: {},
+            title: title,
+            priority: "low",
+            status: StatusToSend,
+        };
+
+        try {
+            const response = await fetch("http://localhost:8081/todos/" + id, {
+                method: "PUT",
+                body: JSON.stringify(data),
+            });
+            const responseData = await response.text();
+            ToDoID = responseData;
+            console.log("Success:", responseData);
+        } catch (error) {
+            console.error("Error:", error);
+        }
+
+        return ToDoID;
     }
 
-    const data = {
-        completed_at: completed_at,
-        responsibility: "development",
-        description: task.description,
-        created_at: current_time,
-        reporter: {
-            firstname: "Bob",
-            role: "development",
-            surname: "Baumeister",
-            id: 8,
-            email: "bob.bau@example.com",
-        },
-        assignee: {},
-        title: task.name,
-        priority: "low",
-        status: StatusToSend,
-    };
-    fetch("http://localhost:8081/todos/" + task.id , {
-        method: "DELETE",
-        body: JSON.stringify(data)
-    })
-        .then((response) => response.text())
-        .then((data) => {
-            console.log("Success", data);
+    /*function PutToDevAPI(task){
+        var StatusToSend = ""
+        if(task.external === true){ // soll beim update von der GetTodosApi nicht schicken
+            task.external = false
+            return
+        }
+    
+        const current_time = creatCurrenTime()
+    
+        var completed_at = "2000-01-20T01:00:00.000+00:00"
+        if(task.status === "done"){
+            completed_at = current_time
+        }
+        if(task.status === "todo"){
+            StatusToSend = "created"
+        }
+        if (task.status === "inprogress"){
+            StatusToSend = "in_progress"
+        }
+    
+        const data = {
+                "completed_at": completed_at,
+                "responsibility": "development",
+                "description": task.description,
+                "created_at": current_time,
+                "reporter": {
+                  "firstname": "Bob",
+                  "role": "development",
+                  "surname": "Baumeister",
+                  "id": 8,
+                  "email": "bob.bau@example.com"
+                },
+                "assignee": {},
+                "title": task.name,
+                "priority": "low",
+                "status": StatusToSend    
+              
+        };
+        fetch("http://localhost:8081/todos/" + task.id , {
+            method: "PUT",
+            body: JSON.stringify(data)
         })
-        .catch((error) => {
-            console.error("Error:", error);
-        });
-}
+            .then((response) => response.text())
+            .then((data) => {
+                console.log("Success", data);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    }
+    */
+    function DeleteToDevApi(task) {
+        var StatusToSend = "";
+        var ToDoID = null;
+        if (task.external === true) {
+            return;
+        }
 
-function getHistoryOfTodo(id){
-    fetch("http://localhost:8081/history/" + id, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            return data
+        const current_time = creatCurrenTime()
+
+        var completed_at = "2000-01-20T01:00:00.000+00:00";
+        if (task.status === "done") {
+            completed_at = current_time;
+        }
+        if (task.status === "todo") {
+            StatusToSend = "created";
+        }
+        if (task.status === "inprogress") {
+            StatusToSend = "in_progress";
+        }
+
+        const data = {
+            completed_at: completed_at,
+            responsibility: "development",
+            description: task.description,
+            created_at: current_time,
+            reporter: {
+                firstname: "Bob",
+                role: "development",
+                surname: "Baumeister",
+                id: 8,
+                email: "bob.bau@example.com",
+            },
+            assignee: {},
+            title: task.name,
+            priority: "low",
+            status: StatusToSend,
+        };
+        fetch("http://localhost:8081/todos/" + task.id, {
+            method: "DELETE",
+            body: JSON.stringify(data)
         })
-        .catch((error) => {
-            console.error("Error:", error);
-        });
-}
-    tasksModule.on("edit", (task) =>{
-       PutToDevAPI(task) // put wird in api angezeigt
-    })
+            .then((response) => response.text())
+            .then((data) => {
+                console.log("Success", data);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    }
 
-    tasksModule.on("remove" , (task)=>{
-       DeleteToDevApi(task)
+    function getHistoryOfTodo(id) {
+        fetch("http://localhost:8081/history/" + id, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                return data
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            });
+    }
+    tasksModule.on("remove", (task) => {
+        DeleteToDevApi(task)
     })
 
 })
