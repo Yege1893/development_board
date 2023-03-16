@@ -13,7 +13,6 @@ const tasksModule = {
             /* priority: priority,
              responsibility: responsibility,
              assignee: assignee,
-             completed_at: completed_at,
              created_at: created_at*/
         }
         this.tasks.push(task)
@@ -339,16 +338,14 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.editButton.addEventListener("click", async (e) => {
         const task = document.getElementsByClassName("in-edit")[0]
         const id = task.id
-        var description = findDescriptionElement(task)
+
 
         if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, task.title, task.description, task.status)
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
-
             tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime)
-            description.innerText = elements.taskDescription.value
         }
 
         task.classList.remove("in-edit")
@@ -365,13 +362,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tasksModule.on("edit", (task) => {
         const element = document.getElementById(task.id)
+        const titleInDom = 0
+        const descriptionInDom = 1
 
         if (element.classList.contains("dragged")) {
             elements[task.status].append(element)
             element.classList.remove("dragged")
-        } else {
+        } else if(task.external === true){
+            element.childNodes[titleInDom].textContent = task.name
+            element.childNodes[descriptionInDom].textContent = task.description
+        }else {
             element.title = elements.taskName.value
-            element.childNodes[0].textContent = elements.taskName.value
+            element.childNodes[titleInDom].textContent = elements.taskName.value
             element.description = elements.taskDescription.value
 
             if (element.parentNode.id !== task.status) {
@@ -450,6 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (task.status === "done") {
+            StatusToSend = "done";
             completed_at = current_time;
         }
         if (task.status === "todo") {
@@ -472,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 email: "bob.bau@example.com",
             },
             assignee: {},
-            title: task.title,
+            title: task.name,
             priority: "low",
             status: StatusToSend,
         };
@@ -495,14 +498,12 @@ document.addEventListener("DOMContentLoaded", () => {
     async function PutToDevAPI(id, title, description, status) {
         var StatusToSend = "";
         var ToDoID = null;
-        /*if (task.external === true) {
-            return;
-        }*/
 
         const current_time = creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (status === "done") {
+            StatusToSend = "done";
             completed_at = current_time;
         }
         if (status === "todo") {
@@ -545,57 +546,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return ToDoID;
     }
 
-    /*function PutToDevAPI(task){
-        var StatusToSend = ""
-        if(task.external === true){ // soll beim update von der GetTodosApi nicht schicken
-            task.external = false
-            return
-        }
-    
-        const current_time = creatCurrenTime()
-    
-        var completed_at = "2000-01-20T01:00:00.000+00:00"
-        if(task.status === "done"){
-            completed_at = current_time
-        }
-        if(task.status === "todo"){
-            StatusToSend = "created"
-        }
-        if (task.status === "inprogress"){
-            StatusToSend = "in_progress"
-        }
-    
-        const data = {
-                "completed_at": completed_at,
-                "responsibility": "development",
-                "description": task.description,
-                "created_at": current_time,
-                "reporter": {
-                  "firstname": "Bob",
-                  "role": "development",
-                  "surname": "Baumeister",
-                  "id": 8,
-                  "email": "bob.bau@example.com"
-                },
-                "assignee": {},
-                "title": task.name,
-                "priority": "low",
-                "status": StatusToSend    
-              
-        };
-        fetch("http://localhost:8081/todos/" + task.id , {
-            method: "PUT",
-            body: JSON.stringify(data)
-        })
-            .then((response) => response.text())
-            .then((data) => {
-                console.log("Success", data);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-            });
-    }
-    */
     function DeleteToDevApi(task) {
         var StatusToSend = "";
         var ToDoID = null;
