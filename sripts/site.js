@@ -3,22 +3,23 @@
 
 const tasksModule = {
     tasks: [],
-    add(id = 'defaultValue', name, description, status /*, priority , assignee */, modifiedAt) {
+    add(id = 'defaultValue', name, description, status , priority , assignee , reporter , modifiedAt , created_at , completed_at) {
         const task = {
             id: id,
             name: name,
             description: description,
             status: status,
-            modifiedAt: modifiedAt
-            /* priority: priority,
-             responsibility: responsibility,
-             assignee: assignee,
-             created_at: created_at*/
+            modifiedAt: modifiedAt,
+            priority: priority,
+            assignee: assignee,
+            reporter: reporter,
+            created_at: created_at,
+            completed_at: completed_at
         }
         this.tasks.push(task)
         this.emit("add", task)
     },
-    edit(id, name, description, status, modifiedAt/*, priority , assignee , completed_at */, external = 'defaultValue') {
+    edit(id, name, description, status, modifiedAt , priority , assignee , completed_at , external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
@@ -26,12 +27,13 @@ const tasksModule = {
                 task.description = description
                 task.status = status
                 task.modifiedAt = modifiedAt
-                /* 
-                task.priority: priority,
-                task.assignee: assignee,
-                task.completed_at: completed_at,*/
+                task.priority= priority
+                if(typeof(assignee)!= Boolean){
+                    task.assignee= assignee
+                }
+                task.completed_at= completed_at,
                 task.external = external,
-                    this.emit("edit", task)
+                this.emit("edit", task)
             }
         }
     },
@@ -65,6 +67,21 @@ const tasksModule = {
             }
         }
     },
+    getTaskbyID(id){
+        var taskToReturn
+        for (const index in this.tasks) {
+            const task = this.tasks[index]
+            if (task.id === id) {
+                taskToReturn = task
+            }
+        } return taskToReturn
+    },
+
+     creatCurrenTime() {
+        let now = new Date();
+        const current_time = now.toISOString().replace("Z", "+00:00");
+        return current_time;
+    }
 }
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -77,6 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
         taskName: document.getElementById("task-name"),
         taskDescription: document.getElementById("task-description"),
         taskstatus: document.getElementById("task-status"),
+        tasksPriority: document.getElementById("task-priority"),
+        tasksAssignee: document.getElementById("task-assignee"),
+        tasksReporter: document.getElementById("task-reporter"),
         cancelButton: document.getElementById("cancel-button"),
         historyButton: document.getElementById("history-button"),
         todo: document.getElementById("todo"),
@@ -85,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
         actiondescription: document.getElementById("action-description")
 
     }
-    // modify drag boxes 
     const boxes = []
 
     boxes.push(done)
@@ -118,14 +137,15 @@ document.addEventListener("DOMContentLoaded", () => {
         box.addEventListener("drop", async (e) => {
             e.target.classList.remove('drag-over');
             e.preventDefault();
-            const draggable = document.getElementById(draggedElementID)
+            const newStatus = e.target.id
+            const draggable = tasksModule.getTaskbyID(draggedElementID)
 
-            if (e.target.id === elements.todo.id || e.target.id === elements.inprogress.id || e.target.id === elements.done.id) {
-                var modifiTime = await PutToDevAPI(draggedElementID, findTitleElement(draggedElement).innerHTML, findDescriptionElement(draggable).innerText, e.target.id)
+            if (newStatus === elements.todo.id || newStatus === elements.inprogress.id || newStatus === elements.done.id) {
+                var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus , draggable.priority)
                 const startIndex = modifiTime.indexOf('"') + 1;
                 const endIndex = modifiTime.indexOf('"', startIndex);
                 modifiTime = modifiTime.slice(startIndex, endIndex);
-                tasksModule.edit(draggedElementID, findTitleElement(draggedElement).innerHTML, findDescriptionElement(draggable).innerText, e.target.id, modifiTime);
+               tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime , draggable.priority , draggable.assignee);
             }
         });
     }
@@ -164,33 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     }
-    function findDescriptionElement(element) {
-        var description = null
-        for (var i = 0; i < element.childNodes.length; i++) {
-            if (element.childNodes[i].className == "description") {
-                element.childNodes[i]
-                description = element.childNodes[i]
-            }
-        }
-        return description
-    }
 
-    function findTitleElement(element) {
-        var title = null
-        for (var i = 0; i < element.childNodes.length; i++) {
-            if (element.childNodes[i].className == "title") {
-                element.childNodes[i]
-                title = element.childNodes[i]
-            }
-        }
-        return title
-    }
-
-    function creatCurrenTime() {
-        let now = new Date();
-        const current_time = now.toISOString().replace("Z", "+00:00");
-        return current_time;
-    }
 
     elements.createButton.addEventListener("click", (e) => {
         elements.savebutton.style.display = "block"
@@ -227,6 +221,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputName = elements.taskName.value
         const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
+        const inputPriority = elements.tasksPriority.value
+        const inputAssignee = elements.tasksAssignee.value
+        const inputReporter = elements.tasksReporter.value
         var ToDoID = ""
 
         for (const task of tasksModule.tasks) {
@@ -239,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!inputName) {
-            alert("Bitte eine ToDo-Beschreibung hinterlegen")
+            alert("Bitte ein ToDo-Namen hinterlegen")
             return
         }
 
@@ -247,18 +244,14 @@ document.addEventListener("DOMContentLoaded", () => {
             name: inputName,
             description: inputDesc,
             status: inputStatus,
-            /* priority: priority,
-             responsibility: responsibility,
-             assignee: assignee,
-             completed_at: completed_at,
-             created_at: created_at
-             external: external,*/
+            priority: inputPriority,
+            assignee: inputAssignee,
         }
         const inputString = await PostToDevApi(inputTask)
         const startIndex = inputString.indexOf('"') + 1;
         const endIndex = inputString.indexOf('"', startIndex);
         ToDoID = inputString.slice(startIndex, endIndex);
-        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus, creatCurrenTime()) // bei modifiedAt muss ein initialies datum rein, wie bei api, beim späteren feld created at muss dass Currentime rein
+        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus , inputPriority , inputAssignee , inputReporter , tasksModule.creatCurrenTime() , tasksModule.creatCurrenTime())
         deleteInput()
         toggleCreatewindow()
     })
@@ -269,6 +262,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
         alert(message)
 
+    })
+
+    elements.editButton.addEventListener("click", async (e) => {
+        const task = document.getElementsByClassName("in-edit")[0]
+        const id = task.id
+
+
+        if (elements.taskName.value) {
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , elements.tasksPriority.value)
+            const startIndex = modifiTime.indexOf('"') + 1;
+            const endIndex = modifiTime.indexOf('"', startIndex);
+            modifiTime = modifiTime.slice(startIndex, endIndex);
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , modifiTime , elements.tasksPriority.value , elements.tasksAssignee.value)
+        }
+
+        task.classList.remove("in-edit")
+
+        toggleCreatewindow()
+
+        elements.savebutton.style.display = "block"
+        elements.editButton.style.display = "none"
+
+        deleteInput()
+        elements.createButton.style.display = "block"
+
+    })
+
+    elements.delteButton.addEventListener("click", (e) => {
+        const task = document.getElementsByClassName("in-edit")[0]
+        const taskId = task.id
+        tasksModule.remove(taskId)
     })
 
     tasksModule.on("add", (task) => {
@@ -308,6 +332,9 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.taskName.value = task.name
             elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
+            elements.tasksAssignee.value = task.assignee
+            elements.tasksPriority.value = task.priority
+            elements.tasksReporter.value = task.reporter.emails
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
@@ -321,7 +348,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const element = document.getElementById(task.id)
 
         element.addEventListener("dragstart", (e) => {
-            e.dataTransfer.setData('text/plain', e.target.classList[0].slice(5))
             setTimeout(() => {
                 e.target.classList.add('hide')
             }, 0)
@@ -332,31 +358,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.target.classList.remove('hide')
             }, 0)
         })
-
-    })
-
-    elements.editButton.addEventListener("click", async (e) => {
-        const task = document.getElementsByClassName("in-edit")[0]
-        const id = task.id
-
-
-        if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
-            const startIndex = modifiTime.indexOf('"') + 1;
-            const endIndex = modifiTime.indexOf('"', startIndex);
-            modifiTime = modifiTime.slice(startIndex, endIndex);
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime)
-        }
-
-        task.classList.remove("in-edit")
-
-        toggleCreatewindow()
-
-        elements.savebutton.style.display = "block"
-        elements.editButton.style.display = "none"
-
-        deleteInput()
-        elements.createButton.style.display = "block"
 
     })
 
@@ -374,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }else {
             element.title = elements.taskName.value
             element.childNodes[titleInDom].textContent = elements.taskName.value
+            element.childNodes[descriptionInDom].textContent = elements.taskDescription.value
             element.description = elements.taskDescription.value
 
             if (element.parentNode.id !== task.status) {
@@ -383,11 +385,16 @@ document.addEventListener("DOMContentLoaded", () => {
         element.classList.remove("in-edit")
     })
 
-    elements.delteButton.addEventListener("click", (e) => {
-        const task = document.getElementsByClassName("in-edit")[0]
-        const taskId = task.id
-        tasksModule.remove(taskId)
+    tasksModule.on("edit" , (task) =>{
+        const taskInDom = document.getElementById(task.id)
+        if(task.external === true){
+            if(taskInDom.parentElement.id !== task.status){
+                taskInDom.remove()
+                elements[task.status].append(taskInDom)
+            }
+        }
     })
+
 
     tasksModule.on("remove", (task) => {
         const element = document.getElementById(task.id)
@@ -422,14 +429,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             const DateExternTodo = new Date(todo.modified_at)
                             if (DateInterTask < DateExternTodo) {
                                 console.log(todo.id, todo.title, todo.description, todo.status, todo.modified_at)
-                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, true)
+                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority , todo.assignee , todo.completed_at, true)
                             }
                             break
                         }
                     }
                     if (!contains) {
-                        console.log("hallo")
-                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.modified_at)
+                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, "", todo.reporter, todo.modified_at , todo.created_at , todo.completed_at)
                     }
                 }
             })
@@ -448,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const current_time = creatCurrenTime()
+        const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (task.status === "done") {
@@ -476,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             assignee: {},
             title: task.name,
-            priority: "low",
+            priority: task.priority,
             status: StatusToSend,
         };
 
@@ -495,11 +501,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return ToDoID;
     }
 
-    async function PutToDevAPI(id, title, description, status) {
+    async function PutToDevAPI(id, title, description, status , priority , assignee) {
         var StatusToSend = "";
         var ToDoID = null;
 
-        const current_time = creatCurrenTime()
+        console.log(priority , "prio")
+
+        const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (status === "done") {
@@ -527,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             assignee: {},
             title: title,
-            priority: "low",
+            priority: priority,
             status: StatusToSend,
         };
 
@@ -553,7 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const current_time = creatCurrenTime()
+        const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (task.status === "done") {

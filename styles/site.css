@@ -139,4 +139,11 @@ body {
   #history-button {
     display: none;
   }
+
+  #task-created_at,
+  #task-completed_at,
+  #task-reporter {
+    pointer-events: none;
+    user-select: none;
+  }
   
