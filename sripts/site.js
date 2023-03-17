@@ -31,7 +31,6 @@ const tasksModule = {
                 if(typeof(assignee)!= Boolean){
                     task.assignee= assignee
                 }
-                task.completed_at= completed_at,
                 task.external = external,
                 this.emit("edit", task)
             }
@@ -97,6 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
         tasksPriority: document.getElementById("task-priority"),
         tasksAssignee: document.getElementById("task-assignee"),
         tasksReporter: document.getElementById("task-reporter"),
+        tasksCompleted: document.getElementById("task-completed_at"),
+        tasksCreated: document.getElementById("task-created_at"),
         cancelButton: document.getElementById("cancel-button"),
         historyButton: document.getElementById("history-button"),
         todo: document.getElementById("todo"),
@@ -157,6 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function deleteInput() {
         elements.taskName.value = ""
         elements.taskDescription.value = ""
+        elements.tasksCompleted.value = ""
+        elements.tasksCreated.value = ""
+        elements.tasksPriority.value = "low"
+        elements.tasksReporter.value = ""
         elements.taskstatus.value = "todo"
 
     }
@@ -334,7 +339,9 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.taskstatus.value = task.status
             elements.tasksAssignee.value = task.assignee
             elements.tasksPriority.value = task.priority
-            elements.tasksReporter.value = task.reporter.emails
+            elements.tasksReporter.value = task.reporter.email
+            elements.tasksCompleted.value = task.completed_at
+            elements.tasksCreated.value = task.created_at
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
@@ -428,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
                             const DateExternTodo = new Date(todo.modified_at)
                             if (DateInterTask < DateExternTodo) {
-                                console.log(todo.id, todo.title, todo.description, todo.status, todo.modified_at)
+                                console.log(todo.completed_at)
                                 tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority , todo.assignee , todo.completed_at, true)
                             }
                             break
@@ -443,7 +450,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", error);
             });
 
-        setTimeout(GetTodosOfApi, 10000);
+        setTimeout(GetTodosOfApi, 7000);
     }
     GetTodosOfApi();
 
@@ -453,7 +460,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (task.external === true) {
             return;
         }
-
         const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
@@ -467,7 +473,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (task.status === "inprogress") {
             StatusToSend = "in_progress";
         }
-
         const data = {
             completed_at: completed_at,
             responsibility: "development",
