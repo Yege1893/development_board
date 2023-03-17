@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const draggable = tasksModule.getTaskbyID(draggedElementID)
 
             if (newStatus === elements.todo.id || newStatus === elements.inprogress.id || newStatus === elements.done.id) {
-                var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus , draggable.priority)
+                var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus , draggable.priority , draggable.assignee)
                 const startIndex = modifiTime.indexOf('"') + 1;
                 const endIndex = modifiTime.indexOf('"', startIndex);
                 modifiTime = modifiTime.slice(startIndex, endIndex);
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , elements.tasksPriority.value)
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , elements.tasksPriority.value , elements.tasksAssignee.value)
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
@@ -456,10 +456,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function PostToDevApi(task) {
         var StatusToSend = "";
+        var AssigneeToSend = "";
         var ToDoID = null;
         if (task.external === true) {
             return;
         }
+
+        if(task.assignee === "michael_acher"){
+            AssigneeToSend = {  
+            firstname: "Michale",
+            role: "development",
+            surname: "Acher",
+            id: 1,
+            email: "michale.acher@example.com",
+        }
+        }else if(task.assignee === "michelle_laut"){
+            AssigneeToSend = {    
+                firstname: "Michelle",
+                role: "development",
+                surname: "Laut",
+                id: 2,
+                email: "michelle.laut@example.com",}
+        }
+
+
         const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
@@ -485,7 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 id: 8,
                 email: "bob.bau@example.com",
             },
-            assignee: {},
+            assignee: AssigneeToSend,
             title: task.name,
             priority: task.priority,
             status: StatusToSend,
@@ -509,9 +529,25 @@ document.addEventListener("DOMContentLoaded", () => {
     async function PutToDevAPI(id, title, description, status , priority , assignee) {
         var StatusToSend = "";
         var ToDoID = null;
-
-        console.log(priority , "prio")
-
+        var AssigneeToSend = "";
+console.log(assignee)
+        if(assignee === "michael_acher"){
+            AssigneeToSend = {  
+            firstname: "Michale",
+            role: "development",
+            surname: "Acher",
+            id: 1,
+            email: "michale.acher@example.com",
+        }
+        }else if(assignee === "michelle_laut"){
+            AssigneeToSend = {    
+                firstname: "Michelle",
+                role: "development",
+                surname: "Laut",
+                id: 2,
+                email: "michelle.laut@example.com",}
+        }
+console.log(AssigneeToSend)
         const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
@@ -538,11 +574,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 id: 8,
                 email: "bob.bau@example.com",
             },
-            assignee: {},
+            assignee: AssigneeToSend,
             title: title,
             priority: priority,
             status: StatusToSend,
         };
+        console.log(data)
 
         try {
             const response = await fetch("http://localhost:8081/todos/" + id, {
@@ -562,8 +599,26 @@ document.addEventListener("DOMContentLoaded", () => {
     function DeleteToDevApi(task) {
         var StatusToSend = "";
         var ToDoID = null;
+        var AssigneeToSend = "";
         if (task.external === true) {
             return;
+        }
+
+        if(task.assignee === "michael_acher"){
+            AssigneeToSend = {  
+            firstname: "Michale",
+            role: "development",
+            surname: "Acher",
+            id: 1,
+            email: "michale.acher@example.com",
+        }
+        }else if(task.assignee === "michelle_laut"){
+            AssigneeToSend = {    
+                firstname: "Michelle",
+                role: "development",
+                surname: "Laut",
+                id: 2,
+                email: "michelle.laut@example.com",}
         }
 
         const current_time = tasksModule.creatCurrenTime()
@@ -591,7 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 id: 8,
                 email: "bob.bau@example.com",
             },
-            assignee: {},
+            assignee: AssigneeToSend,
             title: task.name,
             priority: "low",
             status: StatusToSend,
