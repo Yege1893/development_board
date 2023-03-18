@@ -3,7 +3,7 @@
 
 const tasksModule = {
     tasks: [],
-    add(id = 'defaultValue', name, description, status , priority , assignee , reporter , modifiedAt , created_at , completed_at) {
+    add(id = 'defaultValue', name, description, status, priority, assignee, reporter, modifiedAt, created_at, completed_at) {
         const task = {
             id: id,
             name: name,
@@ -19,7 +19,7 @@ const tasksModule = {
         this.tasks.push(task)
         this.emit("add", task)
     },
-    edit(id, name, description, status, modifiedAt , priority , assignee , completed_at , external = 'defaultValue') {
+    edit(id, name, description, status, modifiedAt, priority, assignee, completed_at, created_at, reporter, external = 'defaultValue') {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
@@ -27,12 +27,17 @@ const tasksModule = {
                 task.description = description
                 task.status = status
                 task.modifiedAt = modifiedAt
-                task.priority= priority
-                if(typeof(assignee)!= Boolean){
-                    task.assignee= assignee
+                task.priority = priority
+                if (typeof (assignee) != Boolean) {
+                    task.assignee = assignee
+                }
+                task.completed_at = completed_at
+                task.created_at = created_at
+                if (reporter !== undefined) {
+                    task.reporter = reporter
                 }
                 task.external = external,
-                this.emit("edit", task)
+                    this.emit("edit", task)
             }
         }
     },
@@ -59,14 +64,7 @@ const tasksModule = {
         }
         this.events[eventName].push(cb)
     },
-    getElementIdByFormular(name, description, status) {
-        for (const element of this.tasks) {
-            if (element.name === name && element.description === description && element.status === status) {
-                return element.id
-            }
-        }
-    },
-    getTaskbyID(id){
+    getTaskbyID(id) {
         var taskToReturn
         for (const index in this.tasks) {
             const task = this.tasks[index]
@@ -76,7 +74,7 @@ const tasksModule = {
         } return taskToReturn
     },
 
-     creatCurrenTime() {
+    creatCurrenTime() {
         let now = new Date();
         const current_time = now.toISOString().replace("Z", "+00:00");
         return current_time;
@@ -103,7 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
         todo: document.getElementById("todo"),
         editButton: document.getElementById("edit-button"),
         delteButton: document.getElementById("delete-button"),
-        actiondescription: document.getElementById("action-description")
+        actiondescription: document.getElementById("action-description"),
+        TaskIdElement: document.getElementById("TaskIdElement")
 
     }
     const boxes = []
@@ -142,11 +141,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const draggable = tasksModule.getTaskbyID(draggedElementID)
 
             if (newStatus === elements.todo.id || newStatus === elements.inprogress.id || newStatus === elements.done.id) {
-                var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus , draggable.priority , draggable.assignee)
+                var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus, draggable.priority, draggable.assignee)
                 const startIndex = modifiTime.indexOf('"') + 1;
                 const endIndex = modifiTime.indexOf('"', startIndex);
                 modifiTime = modifiTime.slice(startIndex, endIndex);
-               tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime , draggable.priority , draggable.assignee);
+                tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, draggable.completed_at, draggable.created_at, draggable.reporter);
             }
         });
     }
@@ -154,7 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.createBlock.classList.add("not-displayed")
 
 
-    // "Hilfs" - Funktionen
     function deleteInput() {
         elements.taskName.value = ""
         elements.taskDescription.value = ""
@@ -202,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     elements.cancelButton.addEventListener("click", (e) => {
-        const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
+        const currentId = TaskIdElement.value
         const currentElement = document.getElementById(currentId)
 
         if (!currentElement) {
@@ -256,15 +254,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const startIndex = inputString.indexOf('"') + 1;
         const endIndex = inputString.indexOf('"', startIndex);
         ToDoID = inputString.slice(startIndex, endIndex);
-        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus , inputPriority , inputAssignee , inputReporter , tasksModule.creatCurrenTime() , tasksModule.creatCurrenTime())
+        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus, inputPriority, inputAssignee, inputReporter, tasksModule.creatCurrenTime(), tasksModule.creatCurrenTime())
         deleteInput()
         toggleCreatewindow()
     })
 
     elements.historyButton.addEventListener("click", async (e) => {
-        const currentId = tasksModule.getElementIdByFormular(elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value)
-        const message = getHistoryOfTodo(currentId).toString()
-
+        const currentId = TaskIdElement.value
+        var message = getHistoryOfTodo(currentId)
+        console.log(message)
         alert(message)
 
     })
@@ -275,11 +273,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , elements.tasksPriority.value , elements.tasksAssignee.value)
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, elements.tasksAssignee.value)
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value , modifiTime , elements.tasksPriority.value , elements.tasksAssignee.value)
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, elements.tasksAssignee.value, elements.tasksCompleted.value, elements.tasksCreated.value)
         }
 
         task.classList.remove("in-edit")
@@ -339,15 +337,32 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.taskstatus.value = task.status
             elements.tasksAssignee.value = task.assignee
             elements.tasksPriority.value = task.priority
-            elements.tasksReporter.value = task.reporter.email
-            elements.tasksCompleted.value = task.completed_at
-            elements.tasksCreated.value = task.created_at
+            if (task.reporter === undefined) {
+                elements.tasksReporter.value = ""
+            } else {
+                elements.tasksReporter.value = task.reporter.email
+            }
+            if (task.completed_at === undefined) {
+                elements.tasksCompleted.value = ""
+            } else {
+                elements.tasksCompleted.value = task.completed_at
+            }
+            if (task.created_at === undefined) {
+                elements.tasksCreated.value = ""
+            } else {
+                elements.tasksCreated.value = task.created_at
+            }
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
             elements.historyButton.style.display = "block"
             elements.delteButton.style.display = "block"
             elements.actiondescription.innerText = "Edit Task"
+            const TaskIdElement = document.createElement("span")
+            TaskIdElement.style.display = "none"
+            TaskIdElement.id = "TaskIdElement"
+            TaskIdElement.innerText = task.id
+            elements.actiondescription.append(TaskIdElement)
         })
 
     })
@@ -376,10 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (element.classList.contains("dragged")) {
             elements[task.status].append(element)
             element.classList.remove("dragged")
-        } else if(task.external === true){
+        } else if (task.external === true) {
             element.childNodes[titleInDom].textContent = task.name
             element.childNodes[descriptionInDom].textContent = task.description
-        }else {
+        } else {
             element.title = elements.taskName.value
             element.childNodes[titleInDom].textContent = elements.taskName.value
             element.childNodes[descriptionInDom].textContent = elements.taskDescription.value
@@ -392,10 +407,10 @@ document.addEventListener("DOMContentLoaded", () => {
         element.classList.remove("in-edit")
     })
 
-    tasksModule.on("edit" , (task) =>{
+    tasksModule.on("edit", (task) => {
         const taskInDom = document.getElementById(task.id)
-        if(task.external === true){
-            if(taskInDom.parentElement.id !== task.status){
+        if (task.external === true) {
+            if (taskInDom.parentElement.id !== task.status) {
                 taskInDom.remove()
                 elements[task.status].append(taskInDom)
             }
@@ -435,14 +450,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
                             const DateExternTodo = new Date(todo.modified_at)
                             if (DateInterTask < DateExternTodo) {
-                                console.log(todo.completed_at)
-                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority , todo.assignee , todo.completed_at, true)
+                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority, todo.assignee, todo.completed_at, todo.created_at, todo.reporter, true)
                             }
                             break
                         }
                     }
                     if (!contains) {
-                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, "", todo.reporter, todo.modified_at , todo.created_at , todo.completed_at)
+                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, "", todo.reporter, todo.modified_at, todo.created_at, todo.completed_at)
                     }
                 }
             })
@@ -462,21 +476,30 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if(task.assignee === "michael_acher"){
-            AssigneeToSend = {  
-            firstname: "Michale",
-            role: "development",
-            surname: "Acher",
-            id: 1,
-            email: "michale.acher@example.com",
-        }
-        }else if(task.assignee === "michelle_laut"){
-            AssigneeToSend = {    
+        if (task.assignee === "michael_acher") {
+            AssigneeToSend = {
+                firstname: "Michale",
+                role: "development",
+                surname: "Acher",
+                id: 1,
+                email: "michale.acher@example.com",
+            }
+        } else if (task.assignee === "michelle_laut") {
+            AssigneeToSend = {
                 firstname: "Michelle",
                 role: "development",
                 surname: "Laut",
                 id: 2,
-                email: "michelle.laut@example.com",}
+                email: "michelle.laut@example.com",
+            }
+        } else if (task.assignee === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
         }
 
 
@@ -498,13 +521,6 @@ document.addEventListener("DOMContentLoaded", () => {
             responsibility: "development",
             description: task.description,
             created_at: current_time,
-            reporter: {
-                firstname: "Bob",
-                role: "development",
-                surname: "Baumeister",
-                id: 8,
-                email: "bob.bau@example.com",
-            },
             assignee: AssigneeToSend,
             title: task.name,
             priority: task.priority,
@@ -526,28 +542,35 @@ document.addEventListener("DOMContentLoaded", () => {
         return ToDoID;
     }
 
-    async function PutToDevAPI(id, title, description, status , priority , assignee) {
+    async function PutToDevAPI(id, title, description, status, priority, assignee, reporter) {
         var StatusToSend = "";
         var ToDoID = null;
         var AssigneeToSend = "";
-console.log(assignee)
-        if(assignee === "michael_acher"){
-            AssigneeToSend = {  
-            firstname: "Michale",
-            role: "development",
-            surname: "Acher",
-            id: 1,
-            email: "michale.acher@example.com",
-        }
-        }else if(assignee === "michelle_laut"){
-            AssigneeToSend = {    
+        if (assignee === "michael_acher") {
+            AssigneeToSend = {
+                firstname: "Michael",
+                role: "development",
+                surname: "Acher",
+                id: 1,
+                email: "michael.acher@example.com",
+            }
+        } else if (assignee === "michelle_laut") {
+            AssigneeToSend = {
                 firstname: "Michelle",
                 role: "development",
                 surname: "Laut",
                 id: 2,
-                email: "michelle.laut@example.com",}
+                email: "michelle.laut@example.com",
+            }
+        } else if (assignee === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
         }
-console.log(AssigneeToSend)
         const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
@@ -567,13 +590,7 @@ console.log(AssigneeToSend)
             responsibility: "development",
             description: description,
             created_at: current_time,
-            reporter: {
-                firstname: "Bob",
-                role: "development",
-                surname: "Baumeister",
-                id: 8,
-                email: "bob.bau@example.com",
-            },
+            reporter: reporter,
             assignee: AssigneeToSend,
             title: title,
             priority: priority,
@@ -604,21 +621,30 @@ console.log(AssigneeToSend)
             return;
         }
 
-        if(task.assignee === "michael_acher"){
-            AssigneeToSend = {  
-            firstname: "Michale",
-            role: "development",
-            surname: "Acher",
-            id: 1,
-            email: "michale.acher@example.com",
-        }
-        }else if(task.assignee === "michelle_laut"){
-            AssigneeToSend = {    
+        if (task.assignee === "michael_acher") {
+            AssigneeToSend = {
+                firstname: "Michale",
+                role: "development",
+                surname: "Acher",
+                id: 1,
+                email: "michale.acher@example.com",
+            }
+        } else if (task.assignee === "michelle_laut") {
+            AssigneeToSend = {
                 firstname: "Michelle",
                 role: "development",
                 surname: "Laut",
                 id: 2,
-                email: "michelle.laut@example.com",}
+                email: "michelle.laut@example.com",
+            }
+        } else if (task.assignee === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
         }
 
         const current_time = tasksModule.creatCurrenTime()
@@ -639,13 +665,7 @@ console.log(AssigneeToSend)
             responsibility: "development",
             description: task.description,
             created_at: current_time,
-            reporter: {
-                firstname: "Bob",
-                role: "development",
-                surname: "Baumeister",
-                id: 8,
-                email: "bob.bau@example.com",
-            },
+            reporter: task.reporter,
             assignee: AssigneeToSend,
             title: task.name,
             priority: "low",
@@ -664,20 +684,19 @@ console.log(AssigneeToSend)
             });
     }
 
-    function getHistoryOfTodo(id) {
-        fetch("http://localhost:8081/history/" + id, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                return data
-            })
-            .catch((error) => {
-                console.error("Error:", error);
+    async function getHistoryOfTodo(id) {
+        try {
+            const response = await fetch("http://localhost:8081/history/" + id, {
+                method: "PUT",
+                body: JSON.stringify(data),
             });
+            const responseData = await response.text();
+            console.log("Success:", responseData);
+        } catch (error) {
+            console.error("Error:", error);
+        }
+
+        return ToDoID;
     }
     tasksModule.on("remove", (task) => {
         DeleteToDevApi(task)
