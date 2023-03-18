@@ -75,9 +75,20 @@ const tasksModule = {
     },
 
     creatCurrenTime() {
-        let now = new Date();
-        const current_time = now.toISOString().replace("Z", "+00:00");
-        return current_time;
+        const now = new Date()
+        const isoString = now.toISOString()
+
+        const timezoneOffset = now.getTimezoneOffset()
+        const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
+        const offsetMinutes = Math.abs(timezoneOffset) % 60
+        const offsetSign = timezoneOffset >= 0 ? "-" : "+"
+        const timezoneOffsetString = `${offsetSign}${padZero(offsetHours)}:${padZero(offsetMinutes)}`
+        const isoStringWithOffset = `${isoString.slice(0, -1)}${timezoneOffsetString}`
+
+        function padZero(num) {
+            return num < 10 ? `0${num}` : num;
+        }
+        return isoStringWithOffset
     }
 }
 document.addEventListener("DOMContentLoaded", () => {
@@ -192,6 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.createButton.addEventListener("click", (e) => {
         elements.savebutton.style.display = "block"
         elements.editButton.style.display = "none"
+        elements.historyButton.style.display = "none"
         elements.delteButton.style.display = "none"
         elements.actiondescription.innerText = "New Task"
         deleteInput()
@@ -339,7 +351,10 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.tasksPriority.value = task.priority
             if (task.reporter === undefined) {
                 elements.tasksReporter.value = ""
-            } else {
+            } else if(task.reporter === null){
+                elements.tasksCompleted.value = ""
+            } 
+            else {
                 elements.tasksReporter.value = task.reporter.email
             }
             if (task.completed_at === undefined) {
@@ -358,11 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.historyButton.style.display = "block"
             elements.delteButton.style.display = "block"
             elements.actiondescription.innerText = "Edit Task"
-            const TaskIdElement = document.createElement("span")
-            TaskIdElement.style.display = "none"
-            TaskIdElement.id = "TaskIdElement"
-            TaskIdElement.innerText = task.id
-            elements.actiondescription.append(TaskIdElement)
+            elements.TaskIdElement.innerText = task.id
         })
 
     })
@@ -500,6 +511,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 id: 0,
                 email: "",
             }
+        } else if (task.assignee.firstname === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
         }
 
 
@@ -563,6 +582,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 email: "michelle.laut@example.com",
             }
         } else if (assignee === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
+        } else if (assignee.firstname === "") {
             AssigneeToSend = {
                 firstname: "",
                 role: "",
@@ -638,6 +665,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 email: "michelle.laut@example.com",
             }
         } else if (task.assignee === "") {
+            AssigneeToSend = {
+                firstname: "",
+                role: "",
+                surname: "",
+                id: 0,
+                email: "",
+            }
+        } else if (task.assignee.firstname === "") {
             AssigneeToSend = {
                 firstname: "",
                 role: "",
