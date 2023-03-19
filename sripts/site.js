@@ -156,7 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const startIndex = modifiTime.indexOf('"') + 1;
                 const endIndex = modifiTime.indexOf('"', startIndex);
                 modifiTime = modifiTime.slice(startIndex, endIndex);
-                tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, draggable.completed_at, draggable.created_at, draggable.reporter);
+                if(newStatus === "done"){
+                    var newCompleted_at = modifiTime
+                }
+                tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, newCompleted_at, draggable.created_at, draggable.reporter);
             }
         });
     }
@@ -289,7 +292,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, elements.tasksAssignee.value, elements.tasksCompleted.value, elements.tasksCreated.value)
+            if(elements.taskstatus === "done"){
+                var newCompleted_at = modifiTime
+            }
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, elements.tasksAssignee.value, newCompleted_at, elements.tasksCreated.value)
         }
 
         task.classList.remove("in-edit")
@@ -481,7 +487,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function PostToDevApi(task) {
         var StatusToSend = "";
-        var AssigneeToSend = "";
+        var AssigneeToSend = task.assignee;
         var ToDoID = null;
         if (task.external === true) {
             return;
@@ -489,11 +495,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (task.assignee === "michael_acher") {
             AssigneeToSend = {
-                firstname: "Michale",
+                firstname: "Michael",
                 role: "development",
                 surname: "Acher",
                 id: 1,
-                email: "michale.acher@example.com",
+                email: "michael.acher@example.com",
             }
         } else if (task.assignee === "michelle_laut") {
             AssigneeToSend = {
@@ -564,7 +570,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function PutToDevAPI(id, title, description, status, priority, assignee, reporter) {
         var StatusToSend = "";
         var ToDoID = null;
-        var AssigneeToSend = "";
+        var AssigneeToSend = assignee;
         if (assignee === "michael_acher") {
             AssigneeToSend = {
                 firstname: "Michael",
@@ -641,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function DeleteToDevApi(task) {
-        var StatusToSend = "";
+        var StatusToSend = task.assignee;
         var ToDoID = null;
         var AssigneeToSend = "";
         if (task.external === true) {
@@ -650,11 +656,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (task.assignee === "michael_acher") {
             AssigneeToSend = {
-                firstname: "Michale",
+                firstname: "Michael",
                 role: "development",
                 surname: "Acher",
                 id: 1,
-                email: "michale.acher@example.com",
+                email: "michael.acher@example.com",
             }
         } else if (task.assignee === "michelle_laut") {
             AssigneeToSend = {
@@ -703,7 +709,7 @@ document.addEventListener("DOMContentLoaded", () => {
             reporter: task.reporter,
             assignee: AssigneeToSend,
             title: task.name,
-            priority: "low",
+            priority: task.priority,
             status: StatusToSend,
         };
         fetch("http://localhost:8081/todos/" + task.id, {
