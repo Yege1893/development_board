@@ -89,6 +89,30 @@ const tasksModule = {
             return num < 10 ? `0${num}` : num;
         }
         return isoStringWithOffset
+    },
+    assignee: [{
+        firstname: "Michael",
+        role: "development",
+        surname: "Acher",
+        id: 1,
+        email: "michael.acher@example.com",
+    }, {
+        firstname: "Michelle",
+        role: "development",
+        surname: "Laut",
+        id: 2,
+        email: "michelle.laut@example.com",
+    }],
+    findAssignee(id){
+        var assigneeToReturn
+        id = parseInt(id)
+        for (const assignee of this.assignee) {
+            console.log(assignee.id , "id von ass")
+            if (assignee.id === id) {
+                assigneeToReturn = assignee
+                console.log(assigneeToReturn, "drinnen")
+            }
+        } return assigneeToReturn
     }
 }
 document.addEventListener("DOMContentLoaded", () => {
@@ -215,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     elements.cancelButton.addEventListener("click", (e) => {
-        const currentId = TaskIdElement.value
+        const currentId = elements.TaskIdElement.innerText
         const currentElement = document.getElementById(currentId)
 
         if (!currentElement) {
@@ -240,7 +264,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
         const inputPriority = elements.tasksPriority.value
-        const inputAssignee = elements.tasksAssignee.value
+        console.log(elements.tasksAssignee.value)
+        const inputAssignee = tasksModule.findAssignee(elements.tasksAssignee.value)
+        console.log(inputAssignee , "inputassignee")
         const inputReporter = elements.tasksReporter.value
         var ToDoID = ""
 
@@ -275,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     elements.historyButton.addEventListener("click", async (e) => {
-        const currentId = TaskIdElement.value
+        const currentId = elements.TaskIdElement.innerText
         var message = getHistoryOfTodo(currentId)
         console.log(message)
         alert(message)
@@ -288,14 +314,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, elements.tasksAssignee.value)
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value))
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
             if(elements.taskstatus === "done"){
                 var newCompleted_at = modifiTime
             }
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, elements.tasksAssignee.value, newCompleted_at, elements.tasksCreated.value)
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value) , newCompleted_at, elements.tasksCreated.value)
         }
 
         task.classList.remove("in-edit")
@@ -348,12 +374,18 @@ document.addEventListener("DOMContentLoaded", () => {
     tasksModule.on("add", (task) => {
         const element = document.getElementById(task.id)
         element.addEventListener("click", (e) => {
+            console.log(task.assignee , "task assignee")
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
             elements.taskName.value = task.name
             elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
-            elements.tasksAssignee.value = task.assignee
+            console.log(task.assignee)
+            if(task.assignee !== ""){
+                elements.tasksAssignee.value = tasksModule.findAssignee(task.assignee.id).id
+            }else{
+                elements.tasksAssignee.value = task.assignee
+            }
             elements.tasksPriority.value = task.priority
             if (task.reporter === undefined) {
                 elements.tasksReporter.value = ""
@@ -373,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 elements.tasksCreated.value = task.created_at
             }
+            console.log(elements.tasksCreated.value , "alsfjla",elements.tasksReporter.value)
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
@@ -481,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", error);
             });
 
-        setTimeout(GetTodosOfApi, 7000);
+        setTimeout(GetTodosOfApi, 3000);
     }
     GetTodosOfApi();
 
@@ -492,7 +525,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (task.external === true) {
             return;
         }
-
         if (task.assignee === "michael_acher") {
             AssigneeToSend = {
                 firstname: "Michael",
@@ -571,6 +603,7 @@ document.addEventListener("DOMContentLoaded", () => {
         var StatusToSend = "";
         var ToDoID = null;
         var AssigneeToSend = assignee;
+        console.log(assignee)
         if (assignee === "michael_acher") {
             AssigneeToSend = {
                 firstname: "Michael",
