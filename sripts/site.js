@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     elements.historyButton.addEventListener("click", async (e) => {
         const currentId = elements.TaskIdElement.innerText
-        var message = getHistoryOfTodo(currentId)
+        var message = await getHistoryOfTodo(currentId)
         console.log(message)
         alert(message)
 
