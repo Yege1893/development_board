@@ -759,18 +759,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function getHistoryOfTodo(id) {
+        var dataToReturn = null
         try {
             const response = await fetch("http://localhost:8081/history/" + id, {
-                method: "PUT",
-                body: JSON.stringify(data),
+                method: "GET",
+                //body: JSON.stringify(data),
             });
             const responseData = await response.text();
+            dataToReturn = responseData
             console.log("Success:", responseData);
         } catch (error) {
             console.error("Error:", error);
         }
 
-        return ToDoID;
+        return dataToReturn
     }
     tasksModule.on("remove", (task) => {
         DeleteToDevApi(task)
