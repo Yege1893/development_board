@@ -489,24 +489,24 @@ document.addEventListener("DOMContentLoaded", () => {
             .then((data) => {
                 for (const todo of data) {
                     var contains = false
+                    var statusToEdit = ""
                     if (todo.status === "created" || todo.status === "on_hold") {
                         todo.status = "todo"
                     } if (todo.status === "in_progress") {
                         todo.status = "inprogress"
                     }
-                    // hier zum löschen, wenns in support geänder wurde
-                    /* if(tasksModule.tasks.length < data.length){
-                         if(tasksModule.tasks.includes(todo.id) === false){
-                             tasksModule.remove(todo.id)
-                         }
-                     }*/
                     for (var i = 0; i < tasksModule.tasks.length; i++) {
                         if (tasksModule.tasks[i].id === todo.id) {
                             contains = true
                             const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
                             const DateExternTodo = new Date(todo.modified_at)
                             if (DateInterTask < DateExternTodo) {
-                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority, tasksModule.tasks[i].assignee, todo.completed_at, todo.created_at, todo.reporter, true)
+                                if(todo.responsibility === "support"){
+                                    statusToEdit = todo.responsibility
+                                }else{
+                                    statusToEdit = todo.status
+                                }
+                                tasksModule.edit(todo.id, todo.title, todo.description, statusToEdit, todo.modified_at, todo.priority, tasksModule.tasks[i].assignee, todo.completed_at, todo.created_at, todo.reporter, true)
                             }
                             break
                         }
