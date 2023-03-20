@@ -28,7 +28,7 @@ const tasksModule = {
                 task.status = status
                 task.modifiedAt = modifiedAt
                 task.priority = priority
-                if (typeof (assignee) != Boolean) {
+                if (assignee !== "") {
                     task.assignee = assignee
                 }
                 task.completed_at = completed_at
@@ -90,27 +90,32 @@ const tasksModule = {
         }
         return isoStringWithOffset
     },
-    assignee: [{
-        firstname: "Michael",
-        role: "development",
-        surname: "Acher",
-        id: 1,
-        email: "michael.acher@example.com",
-    }, {
-        firstname: "Michelle",
-        role: "development",
-        surname: "Laut",
-        id: 2,
-        email: "michelle.laut@example.com",
-    }],
-    findAssignee(id){
+    assignee: [
+        {
+            firstname: "",
+            role: "",
+            surname: "",
+            id: 0,
+            email: "",
+        }, {
+            firstname: "Michael",
+            role: "development",
+            surname: "Acher",
+            id: 1,
+            email: "michael.acher@example.com",
+        }, {
+            firstname: "Michelle",
+            role: "development",
+            surname: "Laut",
+            id: 2,
+            email: "michelle.laut@example.com",
+        }],
+    findAssignee(id) {
         var assigneeToReturn
         id = parseInt(id)
         for (const assignee of this.assignee) {
-            console.log(assignee.id , "id von ass")
             if (assignee.id === id) {
                 assigneeToReturn = assignee
-                console.log(assigneeToReturn, "drinnen")
             }
         } return assigneeToReturn
     }
@@ -180,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const startIndex = modifiTime.indexOf('"') + 1;
                 const endIndex = modifiTime.indexOf('"', startIndex);
                 modifiTime = modifiTime.slice(startIndex, endIndex);
-                if(newStatus === "done"){
+                if (newStatus === "done") {
                     var newCompleted_at = modifiTime
                 }
                 tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, newCompleted_at, draggable.created_at, draggable.reporter);
@@ -264,9 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
         const inputPriority = elements.tasksPriority.value
-        console.log(elements.tasksAssignee.value)
         const inputAssignee = tasksModule.findAssignee(elements.tasksAssignee.value)
-        console.log(inputAssignee , "inputassignee")
         const inputReporter = elements.tasksReporter.value
         var ToDoID = ""
 
@@ -303,7 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.historyButton.addEventListener("click", async (e) => {
         const currentId = elements.TaskIdElement.innerText
         var message = await getHistoryOfTodo(currentId)
-        console.log(message)
         alert(message)
 
     })
@@ -312,16 +314,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const task = document.getElementsByClassName("in-edit")[0]
         const id = task.id
 
-
         if (elements.taskName.value) {
             var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value))
             const startIndex = modifiTime.indexOf('"') + 1;
             const endIndex = modifiTime.indexOf('"', startIndex);
             modifiTime = modifiTime.slice(startIndex, endIndex);
-            if(elements.taskstatus === "done"){
+            console.log(elements.taskstatus.value)
+            if (elements.taskstatus.value === "done") {
                 var newCompleted_at = modifiTime
+                console.log(newCompleted_at , "completed at")
             }
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value) , newCompleted_at, elements.tasksCreated.value)
+            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value), newCompleted_at, elements.tasksCreated.value)
         }
 
         task.classList.remove("in-edit")
@@ -374,24 +377,22 @@ document.addEventListener("DOMContentLoaded", () => {
     tasksModule.on("add", (task) => {
         const element = document.getElementById(task.id)
         element.addEventListener("click", (e) => {
-            console.log(task.assignee , "task assignee")
             element.classList.add("in-edit")
             elements.createButton.style.display = "none"
             elements.taskName.value = task.name
             elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
-            console.log(task.assignee)
-            if(task.assignee !== ""){
+            if (task.assignee !== "" && task.assignee.firstname !== "") {
                 elements.tasksAssignee.value = tasksModule.findAssignee(task.assignee.id).id
-            }else{
+            } else {
                 elements.tasksAssignee.value = task.assignee
             }
             elements.tasksPriority.value = task.priority
             if (task.reporter === undefined) {
                 elements.tasksReporter.value = ""
-            } else if(task.reporter === null){
+            } else if (task.reporter === null) {
                 elements.tasksCompleted.value = ""
-            } 
+            }
             else {
                 elements.tasksReporter.value = task.reporter.email
             }
@@ -405,7 +406,6 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 elements.tasksCreated.value = task.created_at
             }
-            console.log(elements.tasksCreated.value , "alsfjla",elements.tasksReporter.value)
             toggleCreatewindow()
             elements.savebutton.style.display = "none"
             elements.editButton.style.display = "block"
@@ -494,19 +494,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     } if (todo.status === "in_progress") {
                         todo.status = "inprogress"
                     }
+                    // hier zum löschen, wenns in support geänder wurde
+                    /* if(tasksModule.tasks.length < data.length){
+                         if(tasksModule.tasks.includes(todo.id) === false){
+                             tasksModule.remove(todo.id)
+                         }
+                     }*/
                     for (var i = 0; i < tasksModule.tasks.length; i++) {
                         if (tasksModule.tasks[i].id === todo.id) {
                             contains = true
                             const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
                             const DateExternTodo = new Date(todo.modified_at)
                             if (DateInterTask < DateExternTodo) {
-                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority, todo.assignee, todo.completed_at, todo.created_at, todo.reporter, true)
+                                tasksModule.edit(todo.id, todo.title, todo.description, todo.status, todo.modified_at, todo.priority, tasksModule.tasks[i].assignee, todo.completed_at, todo.created_at, todo.reporter, true)
                             }
                             break
                         }
                     }
                     if (!contains) {
-                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, "", todo.reporter, todo.modified_at, todo.created_at, todo.completed_at)
+                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, tasksModule.findAssignee(0), todo.reporter, todo.modified_at, todo.created_at, todo.completed_at)
                     }
                 }
             })
@@ -520,45 +526,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function PostToDevApi(task) {
         var StatusToSend = "";
-        var AssigneeToSend = task.assignee;
         var ToDoID = null;
         if (task.external === true) {
             return;
         }
-        if (task.assignee === "michael_acher") {
-            AssigneeToSend = {
-                firstname: "Michael",
-                role: "development",
-                surname: "Acher",
-                id: 1,
-                email: "michael.acher@example.com",
-            }
-        } else if (task.assignee === "michelle_laut") {
-            AssigneeToSend = {
-                firstname: "Michelle",
-                role: "development",
-                surname: "Laut",
-                id: 2,
-                email: "michelle.laut@example.com",
-            }
-        } else if (task.assignee === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
-        } else if (task.assignee.firstname === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
-        }
-
 
         const current_time = tasksModule.creatCurrenTime()
 
@@ -578,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
             responsibility: "development",
             description: task.description,
             created_at: current_time,
-            assignee: AssigneeToSend,
+            assignee: task.assignee,
             title: task.name,
             priority: task.priority,
             status: StatusToSend,
@@ -602,41 +573,6 @@ document.addEventListener("DOMContentLoaded", () => {
     async function PutToDevAPI(id, title, description, status, priority, assignee, reporter) {
         var StatusToSend = "";
         var ToDoID = null;
-        var AssigneeToSend = assignee;
-        console.log(assignee)
-        if (assignee === "michael_acher") {
-            AssigneeToSend = {
-                firstname: "Michael",
-                role: "development",
-                surname: "Acher",
-                id: 1,
-                email: "michael.acher@example.com",
-            }
-        } else if (assignee === "michelle_laut") {
-            AssigneeToSend = {
-                firstname: "Michelle",
-                role: "development",
-                surname: "Laut",
-                id: 2,
-                email: "michelle.laut@example.com",
-            }
-        } else if (assignee === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
-        } else if (assignee.firstname === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
-        }
         const current_time = tasksModule.creatCurrenTime()
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
@@ -657,12 +593,11 @@ document.addEventListener("DOMContentLoaded", () => {
             description: description,
             created_at: current_time,
             reporter: reporter,
-            assignee: AssigneeToSend,
+            assignee: assignee,
             title: title,
             priority: priority,
             status: StatusToSend,
         };
-        console.log(data)
 
         try {
             const response = await fetch("http://localhost:8081/todos/" + id, {
@@ -681,44 +616,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function DeleteToDevApi(task) {
         var StatusToSend = task.assignee;
-        var ToDoID = null;
-        var AssigneeToSend = "";
         if (task.external === true) {
             return;
-        }
-
-        if (task.assignee === "michael_acher") {
-            AssigneeToSend = {
-                firstname: "Michael",
-                role: "development",
-                surname: "Acher",
-                id: 1,
-                email: "michael.acher@example.com",
-            }
-        } else if (task.assignee === "michelle_laut") {
-            AssigneeToSend = {
-                firstname: "Michelle",
-                role: "development",
-                surname: "Laut",
-                id: 2,
-                email: "michelle.laut@example.com",
-            }
-        } else if (task.assignee === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
-        } else if (task.assignee.firstname === "") {
-            AssigneeToSend = {
-                firstname: "",
-                role: "",
-                surname: "",
-                id: 0,
-                email: "",
-            }
         }
 
         const current_time = tasksModule.creatCurrenTime()
@@ -740,7 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
             description: task.description,
             created_at: current_time,
             reporter: task.reporter,
-            assignee: AssigneeToSend,
+            assignee: task.assignee,
             title: task.name,
             priority: task.priority,
             status: StatusToSend,
@@ -763,7 +662,6 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch("http://localhost:8081/history/" + id, {
                 method: "GET",
-                //body: JSON.stringify(data),
             });
             const responseData = await response.text();
             dataToReturn = responseData
