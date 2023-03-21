@@ -522,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", error);
             });
 
-        setTimeout(GetTodosOfApi, 3000);
+        setTimeout(GetTodosOfApi, 4000);
     }
     GetTodosOfApi();
 
