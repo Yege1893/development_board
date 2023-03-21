@@ -182,13 +182,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (newStatus === elements.todo.id || newStatus === elements.inprogress.id || newStatus === elements.done.id) {
                 var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus, draggable.priority, draggable.assignee)
-                const startIndex = modifiTime.indexOf('"') + 1;
-                const endIndex = modifiTime.indexOf('"', startIndex);
-                modifiTime = modifiTime.slice(startIndex, endIndex);
-                if (newStatus === "done") {
-                    var newCompleted_at = modifiTime
-                }
-                tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, newCompleted_at, draggable.created_at, draggable.reporter);
+                // const startIndex = modifiTime.indexOf('"') + 1;
+                // const endIndex = modifiTime.indexOf('"', startIndex);
+                // modifiTime = modifiTime.slice(startIndex, endIndex);
+                // if (newStatus === "done") {
+                //     var newCompleted_at = modifiTime
+                // }
+                // tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, newCompleted_at, draggable.created_at, draggable.reporter);
+                GetTodosOfApi()
             }
         });
     }
@@ -269,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputDesc = elements.taskDescription.value
         const inputStatus = elements.taskstatus.value
         const inputPriority = elements.tasksPriority.value
-        const inputAssignee = tasksModule.findAssignee(elements.tasksAssignee.value)
+        const inputAssignee = tasksModule.findAssignee(parseInt(elements.tasksAssignee.value))
         const inputReporter = elements.tasksReporter.value
         var ToDoID = ""
 
@@ -295,10 +296,12 @@ document.addEventListener("DOMContentLoaded", () => {
             assignee: inputAssignee,
         }
         const inputString = await PostToDevApi(inputTask)
-        const startIndex = inputString.indexOf('"') + 1;
+        /*const startIndex = inputString.indexOf('"') + 1;
         const endIndex = inputString.indexOf('"', startIndex);
         ToDoID = inputString.slice(startIndex, endIndex);
         tasksModule.add(ToDoID, inputName, inputDesc, inputStatus, inputPriority, inputAssignee, inputReporter, tasksModule.creatCurrenTime(), tasksModule.creatCurrenTime())
+        */
+        GetTodosOfApi()
         deleteInput()
         toggleCreatewindow()
     })
@@ -315,16 +318,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = task.id
 
         if (elements.taskName.value) {
-            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value))
-            const startIndex = modifiTime.indexOf('"') + 1;
-            const endIndex = modifiTime.indexOf('"', startIndex);
-            modifiTime = modifiTime.slice(startIndex, endIndex);
-            console.log(elements.taskstatus.value)
+            var modifiTime = await PutToDevAPI(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, elements.tasksPriority.value, tasksModule.findAssignee(parseInt(elements.tasksAssignee.value)))
             if (elements.taskstatus.value === "done") {
                 var newCompleted_at = modifiTime
-                console.log(newCompleted_at , "completed at")
             }
-            tasksModule.edit(id, elements.taskName.value, elements.taskDescription.value, elements.taskstatus.value, modifiTime, elements.tasksPriority.value, tasksModule.findAssignee(elements.tasksAssignee.value), newCompleted_at, elements.tasksCreated.value)
+            GetTodosOfApi()
         }
 
         task.classList.remove("in-edit")
@@ -382,11 +380,8 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.taskName.value = task.name
             elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
-            if (task.assignee !== "" && task.assignee.firstname !== "") {
-                elements.tasksAssignee.value = tasksModule.findAssignee(task.assignee.id).id
-            } else {
-                elements.tasksAssignee.value = task.assignee
-            }
+            elements.tasksAssignee.value = task.assignee.id
+            // }
             elements.tasksPriority.value = task.priority
             if (task.reporter === undefined) {
                 elements.tasksReporter.value = ""
@@ -496,23 +491,30 @@ document.addEventListener("DOMContentLoaded", () => {
                         todo.status = "inprogress"
                     }
                     for (var i = 0; i < tasksModule.tasks.length; i++) {
-                        if (tasksModule.tasks[i].id === todo.id) {
-                            contains = true
-                            const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
-                            const DateExternTodo = new Date(todo.modified_at)
-                            if (DateInterTask < DateExternTodo) {
-                                if(todo.responsibility === "support"){
-                                    statusToEdit = todo.responsibility
-                                }else{
-                                    statusToEdit = todo.status
+                        if (todo.modified_at) {
+                            if (tasksModule.tasks[i].id === todo.id) {
+                                contains = true
+                                const DateInterTask = new Date(tasksModule.tasks[i].modifiedAt)
+                                const DateExternTodo = new Date(todo.modified_at)
+
+                                if (DateInterTask < DateExternTodo) {
+                                    if (todo.responsibility === "support") {
+                                        statusToEdit = todo.responsibility
+                                    } else {
+                                        statusToEdit = todo.status
+                                    }
+                                    tasksModule.edit(todo.id, todo.title, todo.description, statusToEdit, todo.modified_at, todo.priority, todo.assignee, todo.completed_at, todo.created_at, todo.reporter, true)
                                 }
-                                tasksModule.edit(todo.id, todo.title, todo.description, statusToEdit, todo.modified_at, todo.priority, tasksModule.tasks[i].assignee, todo.completed_at, todo.created_at, todo.reporter, true)
+                                break
                             }
-                            break
                         }
+
                     }
                     if (!contains) {
-                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, tasksModule.findAssignee(0), todo.reporter, todo.modified_at, todo.created_at, todo.completed_at)
+                        if (!todo.assignee.id) {
+                            todo.assignee.id = 0
+                        }
+                        tasksModule.add(todo.id.toString(), todo.title, todo.description, todo.status, todo.priority, todo.assignee, todo.reporter, todo.modified_at, todo.created_at, todo.completed_at)
                     }
                 }
             })
@@ -614,7 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return ToDoID;
     }
 
-    function DeleteToDevApi(task) {
+    async function DeleteToDevApi(task) {
         var StatusToSend = task.assignee;
         if (task.external === true) {
             return;
@@ -672,8 +674,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return dataToReturn
     }
-    tasksModule.on("remove", (task) => {
-        DeleteToDevApi(task)
+    tasksModule.on("remove", async (task) => {
+        await DeleteToDevApi(task)
+        GetTodosOfApi()
     })
 
 })
