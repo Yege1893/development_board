@@ -182,14 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (newStatus === elements.todo.id || newStatus === elements.inprogress.id || newStatus === elements.done.id) {
                 var modifiTime = await PutToDevAPI(draggedElementID, draggable.name, draggable.description, newStatus, draggable.priority, draggable.assignee)
-                // const startIndex = modifiTime.indexOf('"') + 1;
-                // const endIndex = modifiTime.indexOf('"', startIndex);
-                // modifiTime = modifiTime.slice(startIndex, endIndex);
-                // if (newStatus === "done") {
-                //     var newCompleted_at = modifiTime
-                // }
-                // tasksModule.edit(draggedElementID, draggable.name, draggable.description, newStatus, modifiTime, draggable.priority, draggable.assignee, newCompleted_at, draggable.created_at, draggable.reporter);
-                GetTodosOfApi()
+              GetTodosOfApi()
             }
         });
     }
@@ -296,11 +289,6 @@ document.addEventListener("DOMContentLoaded", () => {
             assignee: inputAssignee,
         }
         const inputString = await PostToDevApi(inputTask)
-        /*const startIndex = inputString.indexOf('"') + 1;
-        const endIndex = inputString.indexOf('"', startIndex);
-        ToDoID = inputString.slice(startIndex, endIndex);
-        tasksModule.add(ToDoID, inputName, inputDesc, inputStatus, inputPriority, inputAssignee, inputReporter, tasksModule.creatCurrenTime(), tasksModule.creatCurrenTime())
-        */
         GetTodosOfApi()
         deleteInput()
         toggleCreatewindow()
@@ -381,7 +369,6 @@ document.addEventListener("DOMContentLoaded", () => {
             elements.taskDescription.value = task.description
             elements.taskstatus.value = task.status
             elements.tasksAssignee.value = task.assignee.id
-            // }
             elements.tasksPriority.value = task.priority
             if (task.reporter === undefined) {
                 elements.tasksReporter.value = ""
@@ -521,10 +508,14 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch((error) => {
                 console.error("Error:", error);
             });
-
-        setTimeout(GetTodosOfApi, 4000);
     }
     GetTodosOfApi();
+
+    function RunGetTodosAuto(){
+        GetTodosOfApi()
+        setTimeout(RunGetTodosAuto, 3000);
+    }
+    RunGetTodosAuto()
 
     async function PostToDevApi(task) {
         var StatusToSend = "";
