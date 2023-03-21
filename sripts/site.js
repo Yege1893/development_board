@@ -45,7 +45,8 @@ const tasksModule = {
         for (const index in this.tasks) {
             const task = this.tasks[index]
             if (task.id === id) {
-                this.tasks.splice(index, 1)
+                //this.tasks.splice(index, 1)
+                task.status = "deleted"
                 this.emit("remove", task)
             }
         }
@@ -513,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function RunGetTodosAuto(){
         GetTodosOfApi()
-        setTimeout(RunGetTodosAuto, 3000);
+        setTimeout(RunGetTodosAuto, 1000);
     }
     RunGetTodosAuto()
 
@@ -567,6 +568,11 @@ document.addEventListener("DOMContentLoaded", () => {
         var StatusToSend = "";
         var ToDoID = null;
         const current_time = tasksModule.creatCurrenTime()
+
+        if(!assignee){
+            assignee = tasksModule.findAssignee(0)
+        }
+
 
         var completed_at = "2000-01-20T01:00:00.000+00:00";
         if (status === "done") {
